@@ -251,6 +251,13 @@ class ProfileScreen extends ConsumerWidget {
                       _navRow(context, Icons.info_outline, 'About Bio Clock',
                           '', () => context.push('/about')),
                       _divider(context),
+                      _navRow(
+                          context,
+                          Icons.admin_panel_settings,
+                          'Pitch Dashboard (Demo)',
+                          '',
+                          () => context.push('/pitch')),
+                      _divider(context),
                       _navRow(context, Icons.privacy_tip_outlined,
                           'Privacy Policy', '', () {}),
                       _divider(context),

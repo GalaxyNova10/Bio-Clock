@@ -1,31 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'dart:math' as math;
+
 import '../../../shared/core/app_theme.dart';
 import '../../../shared/core/app_settings_provider.dart';
-import '../../../shared/ui/glass_card.dart';
+import '../../../shared/ui/clay_card.dart';
 import '../../../shared/ui/status_orb.dart';
 import '../../../shared/ui/animated_counter.dart';
 
-/// Reimagined Home page — Discovery Hub.
+/// Vault Discovery Hub — Emerald Claymorphism Redesign
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ext = context.ext;
     final settings = ref.watch(appSettingsProvider);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppTheme.bgDeep, // Deep forest night
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverAppBar(
             floating: true,
-            backgroundColor: Theme.of(context)
-                .scaffoldBackgroundColor
-                .withValues(alpha: 0.92),
+            backgroundColor: AppTheme.bgDeep.withValues(alpha: 0.95),
             surfaceTintColor: Colors.transparent,
             title: Row(
               children: [
@@ -33,20 +34,64 @@ class HomeScreen extends ConsumerWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    gradient: AppTheme.gradientPrimary,
+                    color: AppTheme.emeraldCore,
                     borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.emeraldCore.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                      )
+                    ],
                   ),
-                  child: const Icon(Icons.eco, color: Colors.white, size: 16),
+                  child:
+                      const Icon(Icons.eco, color: AppTheme.bgDeep, size: 18),
                 ),
-                const SizedBox(width: 10),
-                const Text('Bio Clock',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                const SizedBox(width: 12),
+                Text('Bio Clock',
+                    style: GoogleFonts.nunito(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white)),
               ],
             ),
+            actions: [
+              IconButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      duration: const Duration(seconds: 5),
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      content: ClayCard(
+                        glow: true,
+                        baseColor: AppTheme.bgMid,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning_amber_rounded,
+                                color: AppTheme.statusExpire),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'APP-SNS-ALERT: Mango dropping below safe Q10 threshold.',
+                                style: GoogleFonts.dmSans(
+                                    color: Colors.white, fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.notifications_active,
+                    color: AppTheme.emeraldBrite),
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 24, vertical: 12), // Deep padding
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 const SizedBox(height: 16),
@@ -54,208 +99,278 @@ class HomeScreen extends ConsumerWidget {
                 // ── Hero Orb Section ────────────
                 Center(
                   child: const StatusOrb(
-                    size: 130,
-                    color: AppTheme.accentGreen,
+                    size: 150,
+                    baseColor: AppTheme.emeraldCore,
                     label: 'Bio-Clock AI Ready',
-                    sublabel: 'Freshness Analysis Engine',
+                    sublabel: 'Claude 4.5 Haiku Active',
                   ).animate().fadeIn(duration: 600.ms).scale(
                         begin: const Offset(0.9, 0.9),
                         curve: Curves.easeOutBack,
                       ),
                 ),
 
-                const SizedBox(height: 28),
+                const SizedBox(height: 32),
 
-                // ── Gradient Title ──────────
-                ShaderMask(
-                  shaderCallback: (bounds) =>
-                      AppTheme.gradientPrimary.createShader(bounds),
-                  child: const Text(
-                    'Bio Clock',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.15),
+                // ── Feature Walkthrough ClayCards ──
 
-                const SizedBox(height: 8),
-                Text(
-                  'AI-powered food freshness monitoring\nfor smarter produce management',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: ext.textMuted,
-                    height: 1.5,
-                  ),
-                ).animate().fadeIn(delay: 300.ms),
-
-                const SizedBox(height: 28),
-
-                // ── Impact Stats Row ───────────
-                if (settings.demoMode) ...[
-                  const Row(
+                // 1. Smart Scanning
+                ClayCard(
+                  glow: true,
+                  baseColor: AppTheme.surfaceBase,
+                  onTap: () => context.go('/scan'),
+                  child: Row(
                     children: [
-                      Expanded(
-                        child: GlassCard(
-                          child: Padding(
-                            padding: EdgeInsets.all(18),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.eco,
-                                        size: 16, color: AppTheme.accentGreen),
-                                    SizedBox(width: 8),
-                                    Text('CO₂ Saved',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppTheme.accentGreen,
-                                        )),
-                                  ],
-                                ),
-                                SizedBox(height: 12),
-                                AnimatedCounter(
-                                    value: 12500,
-                                    suffix: 'g',
-                                    style: TextStyle(
-                                        fontSize: 26,
-                                        fontWeight: FontWeight.w800)),
-                              ],
-                            ),
-                          ),
-                        ),
+                      const ClayPill(
+                        color: AppTheme.emeraldCore,
+                        glow: false,
+                        child: Icon(Icons.qr_code_scanner,
+                            color: AppTheme.bgDeep, size: 24),
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 16),
                       Expanded(
-                        child: GlassCard(
-                          child: Padding(
-                            padding: EdgeInsets.all(18),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.savings,
-                                        size: 16, color: AppTheme.accentAmber),
-                                    SizedBox(width: 8),
-                                    Text('Money Saved',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppTheme.accentAmber,
-                                        )),
-                                  ],
-                                ),
-                                SizedBox(height: 12),
-                                AnimatedCounter(
-                                    value: 3450,
-                                    prefix: '₹',
-                                    style: TextStyle(
-                                        fontSize: 26,
-                                        fontWeight: FontWeight.w800)),
-                              ],
-                            ),
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Smart Scanning',
+                                style: GoogleFonts.nunito(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white)),
+                            const SizedBox(height: 4),
+                            Text(
+                                'Auto-detect produce freshness in seconds via AI.',
+                                style: GoogleFonts.dmSans(
+                                    fontSize: 13, color: AppTheme.textMuted)),
+                          ],
                         ),
                       ),
                     ],
-                  )
-                      .animate()
-                      .fadeIn(delay: 400.ms, duration: 500.ms)
-                      .slideY(begin: 0.12),
-                  const SizedBox(height: 24),
-                ],
-
-                // ── Feature Walkthrough Cards ──
-                Text(
-                  'WHY BIO CLOCK MATTERS',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    color: ext.textMuted,
                   ),
-                ).animate().fadeIn(delay: 600.ms),
-                const SizedBox(height: 14),
+                ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
 
-                Column(
-                  children: [
-                    _verticalFeatureCard(
-                      context,
-                      icon: Icons.qr_code_scanner,
-                      color: AppTheme.accentGreen,
-                      title: 'Smart Scanning',
-                      description:
-                          'AI-powered camera auto-detects produce and analyzes freshness in seconds.',
-                    ),
-                    const SizedBox(height: 20),
-                    _verticalFeatureCard(
-                      context,
-                      icon: Icons.show_chart,
-                      color: AppTheme.accentCyan,
-                      title: 'Live Graph',
-                      description:
-                          'Real-time RUL tracking with weather-synced environmental simulation.',
-                    ),
-                    const SizedBox(height: 20),
-                    _verticalFeatureCard(
-                      context,
-                      icon: Icons.inventory_2,
-                      color: AppTheme.accentPurple,
-                      title: 'Inventory',
-                      description:
-                          'Track all produce with status updates and batch predictions.',
-                    ),
-                    const SizedBox(height: 20),
-                    _verticalFeatureCard(
-                      context,
-                      icon: Icons.health_and_safety,
-                      color: AppTheme.accentAmber,
-                      title: 'AI Preservation',
-                      description:
-                          'Get smart storage tips to extend freshness and reduce waste.',
-                    ),
-                  ],
-                ).animate().fadeIn(delay: 700.ms, duration: 500.ms),
+                const SizedBox(height: 24),
 
-                const SizedBox(height: 28),
-
-                // ── Science Behind the Clock ──
-                Text(
-                  'SCIENCE BEHIND THE CLOCK',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    color: ext.textMuted,
+                // 2. Live Graph (Waveform preview)
+                ClayCard(
+                  onTap: () => context.go('/graph'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.show_chart,
+                              color: AppTheme.emeraldBrite, size: 24),
+                          const SizedBox(width: 12),
+                          Text('Live RUL Graph',
+                              style: GoogleFonts.nunito(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 60,
+                        width: double.infinity,
+                        child: CustomPaint(
+                          painter: WaveformPainter(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Remaining Useful Life',
+                              style: GoogleFonts.dmSans(
+                                  fontSize: 12, color: AppTheme.textMuted)),
+                          Text('Forecast',
+                              style: GoogleFonts.spaceMono(
+                                  fontSize: 12,
+                                  color: AppTheme.emeraldBrite,
+                                  fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ],
                   ),
-                ).animate().fadeIn(delay: 800.ms),
-                const SizedBox(height: 14),
+                ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),
 
-                _buildScienceSection(context)
-                    .animate()
-                    .fadeIn(delay: 850.ms, duration: 600.ms),
+                const SizedBox(height: 24),
 
-                const SizedBox(height: 20),
+                // 3. Inventory Vault (Purple tint)
+                ClayCard(
+                  onTap: () => context.go('/inventory'),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentPurple.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                              color:
+                                  AppTheme.accentPurple.withValues(alpha: 0.3)),
+                        ),
+                        child: const Icon(Icons.inventory_2,
+                            color: AppTheme.accentPurple, size: 24),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Inventory Vault',
+                                style: GoogleFonts.nunito(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white)),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.cloud_sync,
+                                    color: AppTheme.accentPurple, size: 14),
+                                const SizedBox(width: 6),
+                                Text('S3 Sync Active',
+                                    style: GoogleFonts.spaceMono(
+                                        fontSize: 11,
+                                        color: AppTheme.accentPurple,
+                                        fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1),
 
-                // ── Impact Stats ───────────────
-                Row(
-                  children: [
-                    _featureStat(ext, '85%+', 'Accuracy'),
-                    const SizedBox(width: 10),
-                    _featureStat(ext, '< 3s', 'Scan Time'),
-                    const SizedBox(width: 10),
-                    _featureStat(ext, '61', 'Produce'),
-                  ],
-                ).animate().fadeIn(delay: 900.ms, duration: 400.ms),
+                const SizedBox(height: 24),
+
+                // 4. AI Preservation (Amber tint)
+                ClayCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.lightbulb,
+                              color: AppTheme.accentAmber, size: 24),
+                          const SizedBox(width: 12),
+                          Text('AI Preservation',
+                              style: GoogleFonts.nunito(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.bgDeep,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color:
+                                  AppTheme.accentAmber.withValues(alpha: 0.2)),
+                        ),
+                        child: Text(
+                          '"Apples release ethylene gas. Store them separately from avocados to slow down ripening by 2.4x."',
+                          style: GoogleFonts.dmSans(
+                              fontSize: 13,
+                              color:
+                                  AppTheme.accentAmber.withValues(alpha: 0.9),
+                              fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                    ],
+                  ),
+                ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1),
+
+                const SizedBox(height: 24),
+
+                // 5. Neuro-Symbolic Engine (Q10 Formula)
+                ClayCard(
+                  glow: false,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.psychology,
+                              color: AppTheme.emeraldBrite, size: 24),
+                          const SizedBox(width: 12),
+                          Text('Neuro-Symbolic Engine',
+                              style: GoogleFonts.nunito(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        decoration: BoxDecoration(
+                          color: AppTheme.bgDeep,
+                          borderRadius: BorderRadius.circular(16),
+                          // Faint emerald grid background
+                          image: DecorationImage(
+                            image: const NetworkImage(
+                                'https://www.transparenttextures.com/patterns/cubes.png'), // Placeholder for grid pattern
+                            colorFilter: ColorFilter.mode(
+                                AppTheme.emeraldGlow.withValues(alpha: 0.05),
+                                BlendMode.srcATop),
+                            repeat: ImageRepeat.repeat,
+                          ),
+                          border: Border.all(
+                              color:
+                                  AppTheme.emeraldCore.withValues(alpha: 0.2)),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '2.0^(ΔT / 10.0)',
+                            style: GoogleFonts.spaceMono(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.emeraldBrite,
+                                letterSpacing: 1.5),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Text(
+                          'Q10 Thermodynamic Spoilage Coefficient',
+                          style: GoogleFonts.spaceMono(
+                              fontSize: 10, color: AppTheme.textMuted),
+                        ),
+                      ),
+                    ],
+                  ),
+                ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.1),
 
                 const SizedBox(height: 32),
+
+                // ── Impact Output Counter ───────────
+                if (settings.demoMode)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Waste Prevented: ',
+                          style: GoogleFonts.nunito(
+                              fontSize: 16, color: AppTheme.textSecondary)),
+                      AnimatedCounter(
+                        value: 284,
+                        suffix: ' kg',
+                        style: GoogleFonts.spaceMono(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.emeraldCore),
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 700.ms),
+
+                const SizedBox(
+                    height: 120), // Padding for the floating nav pill
               ]),
             ),
           ),
@@ -263,211 +378,52 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _verticalFeatureCard(
-    BuildContext context, {
-    required IconData icon,
-    required Color color,
-    required String title,
-    required String description,
-  }) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: GlassCard(
-        gradientBorder: true,
-        borderRadius: BorderRadius.circular(24),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(icon, color: color, size: 24),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: context.ext.textSecondary,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
+class WaveformPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppTheme.emeraldCore
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
 
-  Widget _buildScienceSection(BuildContext context) {
-    final ext = context.ext;
-    return GlassCard(
-      gradientBorder: true,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentPurple.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.psychology,
-                      color: AppTheme.accentPurple, size: 20),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Neuro-Symbolic AI Engine',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Bio Clock uses Claude Haiku for neuro-symbolic reasoning — '
-              'translating visual freshness cues and environmental stress into '
-              'precise shelf-life predictions.',
-              style: TextStyle(
-                fontSize: 13,
-                color: ext.textSecondary,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 18),
+    final path = Path();
+    path.moveTo(0, size.height * 0.2);
 
-            // Q10 Formula
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: ext.surfaceDim,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: AppTheme.accentGreen.withValues(alpha: 0.15)),
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    'Q₁₀ = 2.0 ^ (ΔT / 10.0)',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.accentGreen,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'The Q10 coefficient models how temperature accelerates '
-                    'molecular decay in produce — every 10°C increase roughly '
-                    'doubles the spoilage rate.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: ext.textMuted,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    // Create a stylized descending wave
+    final random = math.Random(42);
+    double x = 0;
+    while (x < size.width) {
+      x += 20;
+      double y = size.height * 0.2 +
+          (x / size.width) * size.height * 0.7; // general downward trend
+      y += (random.nextDouble() - 0.5) * 15; // noise
+      path.lineTo(x, y);
+    }
 
-            const SizedBox(height: 14),
-
-            // How it works steps
-            _scienceStep(context, '1', 'Scan produce with your camera',
-                AppTheme.accentGreen),
-            _scienceStep(context, '2',
-                'AI analyzes visual & environmental data', AppTheme.accentCyan),
-            _scienceStep(
-                context,
-                '3',
-                'Q10 model predicts remaining useful life',
-                AppTheme.accentPurple),
-            _scienceStep(context, '4', 'Smart preservation tips delivered',
-                AppTheme.accentAmber),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _scienceStep(
-      BuildContext context, String step, String text, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Center(
-              child: Text(step,
-                  style: TextStyle(
-                      fontSize: 11, fontWeight: FontWeight.w700, color: color)),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(text,
-                style:
-                    TextStyle(fontSize: 13, color: context.ext.textSecondary)),
-          ),
+    // Add a gentle glow below the line
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          AppTheme.emeraldCore.withValues(alpha: 0.3),
+          AppTheme.bgDeep.withValues(alpha: 0.0),
         ],
-      ),
-    );
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..style = PaintingStyle.fill;
+
+    final fillPath = Path.from(path)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    canvas.drawPath(fillPath, fillPaint);
+    canvas.drawPath(path, paint);
   }
 
-  Widget _featureStat(AppThemeExtension ext, String value, String label) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(value,
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 11, color: ext.textMuted)),
-        ],
-      ),
-    );
-  }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

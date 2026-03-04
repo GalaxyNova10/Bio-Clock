@@ -9,6 +9,7 @@ import '../../../shared/data/inventory_provider.dart';
 import '../../../shared/data/weather_service.dart';
 import '../../../shared/core/time_utils.dart';
 import '../../../shared/ui/glass_card.dart';
+import '../../../shared/ui/produce_emoji.dart';
 
 /// The scan experience — loading → reticle → scanner → storage → results.
 class ScanScreen extends ConsumerStatefulWidget {
@@ -135,6 +136,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
           status: _resultStatus,
           icon: Icons.eco,
           iconColor: _statusColor(_resultStatus),
+          emoji: ProduceEmoji.getEmoji(_resultName),
           storage: _selectedStorage,
           addedAt: DateTime.now(),
         ));

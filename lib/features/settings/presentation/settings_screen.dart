@@ -89,28 +89,54 @@ class SettingsScreen extends ConsumerWidget {
 
                 const SizedBox(height: 28),
 
-                // ── Notifications ────────────────────────
-                _sectionLabel(context, 'Notifications')
+                // ── Bio-Agent / AWS Alert System ────────────────────────
+                _sectionLabel(context, 'Bio-Agent Integration')
                     .animate()
                     .fadeIn(delay: 200.ms),
                 const SizedBox(height: 12),
                 _settingsCard(context, [
                   _toggleRow(
                     context: context,
-                    icon: Icons.notifications_outlined,
-                    title: 'Push Notifications',
-                    subtitle: 'Alert before items expire',
+                    icon: Icons.shield_outlined,
+                    title: 'Autonomous Bio-Guardian',
+                    subtitle: 'Enable Amazon SNS push alerts',
                     value: true,
                     onChanged: (_) {},
                   ),
                   Divider(color: ext.glassBorder, height: 1, indent: 56),
                   _toggleRow(
                     context: context,
-                    icon: Icons.email_outlined,
-                    title: 'Email Reports',
-                    subtitle: 'Weekly waste reduction report',
+                    icon: Icons.cloud_sync_outlined,
+                    title: 'Bedrock Logging',
+                    subtitle: 'Stream analysis logs to CloudWatch',
                     value: false,
                     onChanged: (_) {},
+                  ),
+                  Divider(color: ext.glassBorder, height: 1, indent: 56),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Alert Threshold (Remaining Useful Life)',
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w500)),
+                        const SizedBox(height: 4),
+                        Text('Alert when items drop below 6 hours RUL.',
+                            style:
+                                TextStyle(fontSize: 11, color: ext.textMuted)),
+                        const SizedBox(height: 8),
+                        Slider(
+                          value: 6.0,
+                          min: 1.0,
+                          max: 24.0,
+                          divisions: 23,
+                          label: '6 hrs',
+                          onChanged: (v) {},
+                        ),
+                      ],
+                    ),
                   ),
                 ])
                     .animate()

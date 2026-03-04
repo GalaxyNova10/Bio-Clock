@@ -12,6 +12,7 @@ import '../../features/scan/presentation/scan_screen.dart';
 import '../../features/graph/presentation/graph_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/about/presentation/about_screen.dart';
+import '../../features/admin/presentation/pitch_dashboard.dart';
 
 final _router = GoRouter(
   initialLocation: '/splash',
@@ -76,6 +77,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/about',
       builder: (_, __) => const AboutScreen(),
+    ),
+    GoRoute(
+      path: '/pitch',
+      builder: (_, __) => const PitchDashboard(),
     ),
   ],
 );

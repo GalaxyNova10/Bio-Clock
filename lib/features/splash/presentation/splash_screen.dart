@@ -23,8 +23,8 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
     )..repeat(reverse: true);
 
-    // Auto-navigate after 3 seconds
-    Future.delayed(const Duration(milliseconds: 3000), () {
+    // Auto-navigate after 4 seconds
+    Future.delayed(const Duration(milliseconds: 4000), () {
       if (mounted) context.go('/login');
     });
   }
@@ -164,14 +164,28 @@ class _SplashScreenState extends State<SplashScreen>
 
                   const SizedBox(height: 10),
 
-                  // Tagline
-                  Text(
-                    'AI-Powered Food Freshness Monitor',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.5),
-                      letterSpacing: 0.5,
-                    ),
+                  // Tagline / Connection Sequence
+                  TweenAnimationBuilder<int>(
+                    tween: IntTween(begin: 0, end: 4),
+                    duration: const Duration(milliseconds: 4000),
+                    builder: (context, value, child) {
+                      final statusStrings = [
+                        'Initializing App...',
+                        'Waking Claude 4.5 Haiku...',
+                        'Syncing DynamoDB Vault...',
+                        'Connecting AWS SNS...',
+                        'Bio-Guardian Online',
+                      ];
+                      return Text(
+                        statusStrings[value.clamp(0, 4)],
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.emeraldBrite.withValues(alpha: 0.8),
+                          letterSpacing: 0.5,
+                          fontFamily: 'Space Mono',
+                        ),
+                      );
+                    },
                   ).animate().fadeIn(delay: 1000.ms, duration: 800.ms),
 
                   const SizedBox(height: 48),

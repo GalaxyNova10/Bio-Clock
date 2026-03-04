@@ -52,7 +52,7 @@ class PulseScreen extends ConsumerWidget {
                 Center(
                   child: const StatusOrb(
                     size: 140,
-                    color: AppTheme.accentGreen,
+                    baseColor: AppTheme.accentGreen,
                     label: 'Claude 4.5 Haiku Ready',
                     sublabel: 'on AWS Bedrock',
                   ).animate().fadeIn(duration: 600.ms).scale(

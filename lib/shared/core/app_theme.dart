@@ -1,48 +1,106 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Bio-Clock Pulse — Design System (Light + Dark)
+/// Bio-Clock Emerald Claymorphism Master Theme
 ///
-/// Softer, professional palette. No harsh neon gradients.
+/// Deep forest night backgrounds with 3D inflated emerald components.
 class AppTheme {
   AppTheme._();
 
-  // ── Core Palette — Dark ───────────────────────────────────────
-  static const Color backgroundDark = Color(0xFF0F1420);
-  static const Color surfaceDark = Color(0xFF1A2030);
-  static const Color surfaceLightDark = Color(0xFF252D3F);
-  static const Color surfaceDimDark = Color(0xFF0C1018);
+  // ── Master Theme Tokens: Emerald Clay ───────────────────────────
 
-  // ── Core Palette — Light ──────────────────────────────────────
-  static const Color backgroundLight = Color(0xFFF5F7FA);
-  static const Color surfaceLight = Color(0xFFFFFFFF);
-  static const Color surfaceLightLight = Color(0xFFF0F2F5);
-  static const Color surfaceDimLight = Color(0xFFE8ECF0);
+  // Backgrounds
+  static const Color bgDeep = Color(0xFF071409);
+  static const Color bgMid = Color(0xFF0C1E10);
 
-  // ── Accent Colors (softened, less neon) ────────────────────────
-  static const Color accentGreen = Color(0xFF22C55E);
-  static const Color accentCyan = Color(0xFF38BDF8);
+  // Surfaces
+  static const Color surfaceBase = Color(0xFF112616);
+  static const Color surfaceUp = Color(0xFF183120);
+  static const Color surfacePeak = Color(0xFF1F3D28);
+  static const Color surfaceDimDark = Color(0xFF0C1018); // fallback
+  static const Color surfaceDimLight = Color(0xFFE8ECF0); // fallback
+
+  // Primaries
+  static const Color emeraldCore = Color(0xFF10B981);
+  static const Color emeraldBrite = Color(0xFF34D399);
+  static const Color emeraldGlow = Color(0xFF6EE7B7);
+
+  // Status/Accents
+  static const Color statusExpire = Color(0xFFF97316);
   static const Color accentPurple = Color(0xFF8B5CF6);
   static const Color accentAmber = Color(0xFFF59E0B);
-  static const Color accentRed = Color(0xFFEF4444);
 
-  // ── Glass Tokens ──────────────────────────────────────────────
-  static const double glassBlurSigma = 12.0;
+  // LEGACY ALIASES (to prevent breaking other screens)
+  static const Color accentGreen = emeraldCore;
+  static const Color accentCyan = emeraldBrite;
+  static const Color accentRed = statusExpire;
 
-  // ── Animation Durations ───────────────────────────────────────
+  static const LinearGradient gradientPrimary = LinearGradient(
+    colors: [emeraldCore, emeraldBrite],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient gradientPurpleCyan = LinearGradient(
+    colors: [accentPurple, emeraldBrite],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient gradientAmber = LinearGradient(
+    colors: [accentAmber, Color(0xFFD97706)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   static const Duration durationFast = Duration(milliseconds: 200);
-  static const Duration durationNormal = Duration(milliseconds: 400);
-  static const Duration durationSlow = Duration(milliseconds: 800);
-  static const Duration durationBreathing = Duration(milliseconds: 2000);
+  static const Duration durationNormal = Duration(milliseconds: 300);
+  static const double glassBlurSigma = 10.0;
+  static const Color surfaceDark = Color(0xFF1E1E1E);
+  static const Color surfaceLightLight = Color(0xFFF5F5F5);
+  static const Color surfaceLightDark = Color(0xFF333333);
+  static const Color surfaceLight = Color(0xFFE0E0E0);
 
-  // ── Rounded Radius ────────────────────────────────────────────
-  static const double radiusSm = 8;
-  static const double radiusMd = 12;
-  static const double radiusLg = 16;
-  static const double radiusXl = 20;
-  static const double radiusRound = 100;
+  // Texts
+  static const Color textPrimary = Colors.white;
+  static const Color textSecondary = Color(0xB3FFFFFF);
+  static const Color textMuted = Color(0x66FFFFFF);
 
-  // ── Neon Glow Shadows ─────────────────────────────────────────
+  // ── Shadows (Claymorphism) ──────────────────────────────────────
+
+  // 3-layer structural lift
+  static List<BoxShadow> get clayShadow => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.6),
+          offset: const Offset(0, 8),
+          blurRadius: 16,
+          spreadRadius: -4,
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.4),
+          offset: const Offset(0, 4),
+          blurRadius: 8,
+          spreadRadius: -2,
+        ),
+        BoxShadow(
+          color: bgDeep.withValues(alpha: 0.8),
+          offset: const Offset(0, 2),
+          blurRadius: 4,
+          spreadRadius: 0,
+        ),
+      ];
+
+  // Upward emerald pulse
+  static List<BoxShadow> get clayGlowShadow => [
+        ...clayShadow,
+        BoxShadow(
+          color: emeraldGlow.withValues(alpha: 0.25),
+          offset: const Offset(0, -4),
+          blurRadius: 20,
+          spreadRadius: 2,
+        ),
+      ];
+
   static List<BoxShadow> neonGlow(Color color, {double intensity = 0.5}) {
     return [
       BoxShadow(
@@ -58,146 +116,114 @@ class AppTheme {
     ];
   }
 
-  // ── Gradient Presets (softened) ─────────────────────────────────
-  static const LinearGradient gradientPrimary = LinearGradient(
-    colors: [accentGreen, Color(0xFF34D399)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
+  // ── Rounded Radius ────────────────────────────────────────────
+  static const double radiusSm = 8;
+  static const double radiusMd = 16;
+  static const double radiusLg = 24; // Aggressive rounding
+  static const double radiusXl = 28; // Required by ClayCard
+  static const double radiusXxl = 32;
+  static const double radiusRound = 100;
 
-  static const LinearGradient gradientPurpleCyan = LinearGradient(
-    colors: [accentPurple, accentCyan],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  static const LinearGradient gradientAmber = LinearGradient(
-    colors: [accentAmber, Color(0xFFD97706)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  // ── DARK THEME ─────────────────────────────────────────────────
+  // ── THEME ──────────────────────────────────────────────────────
   static ThemeData get darkTheme {
-    return _buildTheme(
-      brightness: Brightness.dark,
-      background: backgroundDark,
-      surface: surfaceDark,
-      glassBackground: const Color(0x14FFFFFF),
-      glassBorder: const Color(0x18FFFFFF),
-      textPrimary: Colors.white,
-      textSecondary: const Color(0xB3FFFFFF),
-      textMuted: const Color(0x66FFFFFF),
-    );
-  }
-
-  // ── LIGHT THEME ────────────────────────────────────────────────
-  static ThemeData get lightTheme {
-    return _buildTheme(
-      brightness: Brightness.light,
-      background: backgroundLight,
-      surface: surfaceLight,
-      glassBackground: const Color(0x0A000000),
-      glassBorder: const Color(0x14000000),
-      textPrimary: const Color(0xFF1A1A2E),
-      textSecondary: const Color(0xFF4A5568),
-      textMuted: const Color(0xFF9CA3AF),
-    );
-  }
-
-  static ThemeData _buildTheme({
-    required Brightness brightness,
-    required Color background,
-    required Color surface,
-    required Color glassBackground,
-    required Color glassBorder,
-    required Color textPrimary,
-    required Color textSecondary,
-    required Color textMuted,
-  }) {
-    final isDark = brightness == Brightness.dark;
-
     return ThemeData(
       useMaterial3: true,
-      brightness: brightness,
-      scaffoldBackgroundColor: background,
-      colorScheme: ColorScheme(
-        brightness: brightness,
-        primary: accentGreen,
-        onPrimary: isDark ? Colors.black : Colors.white,
-        secondary: accentCyan,
-        onSecondary: isDark ? Colors.black : Colors.white,
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: bgDeep,
+      colorScheme: const ColorScheme.dark(
+        primary: emeraldCore,
+        onPrimary: Colors.black,
+        secondary: emeraldBrite,
+        onSecondary: Colors.black,
         tertiary: accentPurple,
         onTertiary: Colors.white,
-        surface: surface,
+        surface: surfaceBase,
         onSurface: textPrimary,
-        error: accentRed,
+        error: statusExpire,
         onError: Colors.white,
       ),
-      textTheme: GoogleFonts.interTextTheme(
-        TextTheme(
-          displayLarge: TextStyle(
-            fontSize: 40,
-            fontWeight: FontWeight.w800,
-            color: textPrimary,
-            height: 1.1,
-            letterSpacing: -1.0,
-          ),
-          displayMedium: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: textPrimary,
-            height: 1.2,
-          ),
-          titleLarge: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: textPrimary,
-          ),
-          titleMedium: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: textPrimary,
-          ),
-          bodyLarge: TextStyle(
-            fontSize: 16,
-            color: textSecondary,
-            height: 1.5,
-          ),
-          bodyMedium: TextStyle(
-            fontSize: 14,
-            color: textSecondary,
-            height: 1.5,
-          ),
-          bodySmall: TextStyle(
-            fontSize: 12,
-            color: textMuted,
-          ),
-          labelSmall: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.2,
-            color: textMuted,
-          ),
+      textTheme: TextTheme(
+        // Headings - Nunito
+        displayLarge: GoogleFonts.nunito(
+          fontSize: 40,
+          fontWeight: FontWeight.w800,
+          color: textPrimary,
+          height: 1.1,
+          letterSpacing: -1.0,
+        ),
+        displayMedium: GoogleFonts.nunito(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: textPrimary,
+          height: 1.2,
+        ),
+        titleLarge: GoogleFonts.nunito(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: textPrimary,
+        ),
+        titleMedium: GoogleFonts.nunito(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: textPrimary,
+        ),
+
+        // Body - DM Sans
+        bodyLarge: GoogleFonts.dmSans(
+          fontSize: 16,
+          color: textSecondary,
+          height: 1.5,
+        ),
+        bodyMedium: GoogleFonts.dmSans(
+          fontSize: 14,
+          color: textSecondary,
+          height: 1.5,
+        ),
+        bodySmall: GoogleFonts.dmSans(
+          fontSize: 12,
+          color: textMuted,
+        ),
+
+        // Data/Labels - Space Mono
+        labelSmall: GoogleFonts.spaceMono(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.2,
+          color: textMuted,
+        ),
+        labelMedium: GoogleFonts.spaceMono(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: textSecondary,
+        ),
+        labelLarge: GoogleFonts.spaceMono(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: textPrimary,
         ),
       ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+      ),
       cardTheme: CardThemeData(
-        color: surface,
-        elevation: isDark ? 0 : 1,
+        color: surfaceBase,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusLg),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: accentGreen,
+          backgroundColor: emeraldCore,
           foregroundColor: Colors.black,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radiusMd),
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.nunito(
             fontSize: 16,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
@@ -206,59 +232,48 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: glassBackground,
+        fillColor: surfaceBase,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
-          borderSide: BorderSide(color: glassBorder),
+          borderSide: const BorderSide(color: surfacePeak),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
-          borderSide: BorderSide(color: glassBorder),
+          borderSide: const BorderSide(color: surfaceUp),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMd),
-          borderSide: const BorderSide(color: accentGreen, width: 1.5),
+          borderSide: const BorderSide(color: emeraldCore, width: 1.5),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        hintStyle: TextStyle(color: textMuted),
+        hintStyle: const TextStyle(color: textMuted),
       ),
       sliderTheme: SliderThemeData(
-        activeTrackColor: accentCyan,
-        inactiveTrackColor: glassBackground,
-        thumbColor: accentCyan,
-        overlayColor: accentCyan.withValues(alpha: 0.15),
+        activeTrackColor: emeraldBrite,
+        inactiveTrackColor: surfaceUp,
+        thumbColor: emeraldGlow,
+        overlayColor: emeraldGlow.withValues(alpha: 0.15),
         trackHeight: 6,
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
       ),
-      dividerTheme: DividerThemeData(
-        color: glassBorder,
+      dividerTheme: const DividerThemeData(
+        color: surfaceUp,
         thickness: 1,
       ),
-      // Store custom values via extensions
-      extensions: [
+      extensions: const [
         AppThemeExtension(
-          glassBackground: glassBackground,
-          glassBorder: glassBorder,
+          glassBackground: Color(0x14FFFFFF),
+          glassBorder: Color(0x18FFFFFF),
           textMuted: textMuted,
           textSecondary: textSecondary,
-          surfaceDim: isDark ? surfaceDimDark : surfaceDimLight,
+          surfaceDim: surfaceDimDark,
         ),
       ],
     );
   }
 
-  // ── Decorations (theme-aware) ─────────────────────────────────
-  static BoxDecoration glassCardDecoration(BuildContext context,
-      {double radius = radiusLg, List<BoxShadow>? shadows}) {
-    final ext = Theme.of(context).extension<AppThemeExtension>()!;
-    return BoxDecoration(
-      color: ext.glassBackground,
-      borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: ext.glassBorder),
-      boxShadow: shadows,
-    );
-  }
+  static ThemeData get lightTheme => darkTheme;
 }
 
 /// Theme extension to carry custom tokens through [ThemeData].
@@ -311,9 +326,9 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
 /// Convenience extensions for [BuildContext].
 extension ThemeX on BuildContext {
   ThemeData get theme => Theme.of(this);
+  bool get isDark => theme.brightness == Brightness.dark;
   ColorScheme get colors => theme.colorScheme;
   TextTheme get textStyles => theme.textTheme;
   AppThemeExtension get ext => theme.extension<AppThemeExtension>()!;
-  bool get isDark => theme.brightness == Brightness.dark;
   bool get isWide => MediaQuery.sizeOf(this).width >= 600;
 }
