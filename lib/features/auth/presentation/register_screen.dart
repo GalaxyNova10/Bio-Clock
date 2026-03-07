@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../shared/core/app_theme.dart';
+import '../../../shared/data/auth_provider.dart';
 import '../../../shared/ui/glass_card.dart';
 
 /// Glass-card registration screen.
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -29,8 +33,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _register() {
-    context.go('/');
+  Future<void> _register() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirm = _confirmController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
+    }
+    if (password != confirm) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
+    }
+
+    final success = await ref.read(authProvider.notifier).signUp(email, password, fullName: _nameController.text.trim());
+    if (mounted && success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created! Please sign in.'),
+          backgroundColor: AppTheme.accentGreen,
+        ),
+      );
+      context.go('/login');
+    } else if (mounted) {
+      final error = ref.read(authProvider).error ?? 'Registration failed';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+    }
   }
 
   @override
@@ -59,16 +94,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 40),
 
                 // Logo
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    gradient: AppTheme.gradientPrimary,
-                    boxShadow:
-                        AppTheme.neonGlow(AppTheme.accentGreen, intensity: 0.3),
-                  ),
-                  child: const Icon(Icons.eco, color: Colors.white, size: 32),
+                SvgPicture.asset(
+                  'assets/images/bioClockLeafLogo.svg',
+                  width: 120,
                 ).animate().fadeIn(duration: 600.ms).scale(
                       begin: const Offset(0.8, 0.8),
                       curve: Curves.easeOutBack,
@@ -110,7 +138,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         _textField(
                           controller: _nameController,
                           hint: 'Enter your full name',
-                          icon: Icons.person_outline,
+                          icon: LucideIcons.user,
                         ),
 
                         const SizedBox(height: 18),
@@ -119,7 +147,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         _textField(
                           controller: _emailController,
                           hint: 'Enter your email',
-                          icon: Icons.email_outlined,
+                          icon: LucideIcons.mail,
                         ),
 
                         const SizedBox(height: 18),
@@ -128,7 +156,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         _textField(
                           controller: _passwordController,
                           hint: 'Create a password',
-                          icon: Icons.lock_outline,
+                          icon: LucideIcons.lock,
                           obscure: _obscure,
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -149,7 +177,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         _textField(
                           controller: _confirmController,
                           hint: 'Confirm your password',
-                          icon: Icons.lock_outline,
+                          icon: LucideIcons.lock,
                           obscure: _obscureConfirm,
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -178,7 +206,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   intensity: 0.3),
                             ),
                             child: ElevatedButton(
-                              onPressed: _register,
+                              onPressed: ref.watch(authProvider).isLoading ? null : _register,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
@@ -186,14 +214,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: const Text(
-                                'Create Account',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
+                              child: ref.watch(authProvider).isLoading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Create Account',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                             ),
                           ),
                         ),

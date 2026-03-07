@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:math' as math;
 
 import '../../../shared/core/app_theme.dart';
 import '../../../shared/core/app_settings_provider.dart';
 import '../../../shared/ui/clay_card.dart';
-import '../../../shared/ui/status_orb.dart';
+import '../../../shared/ui/chrono_seed.dart';
 import '../../../shared/ui/animated_counter.dart';
 
 /// Vault Discovery Hub — Emerald Claymorphism Redesign
@@ -18,40 +20,35 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);
+    final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBase = isDark ? const Color(0xFF0D1117) : const Color(0xFFFFFFFF);
+    final cardPeak = isDark ? const Color(0xFF1A1F2B) : const Color(0xFFF0FAF4);
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final mutedText = onSurface.withValues(alpha: 0.55);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgDeep, // Deep forest night
+      backgroundColor: scaffoldBg,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverAppBar(
             floating: true,
-            backgroundColor: AppTheme.bgDeep.withValues(alpha: 0.95),
+            backgroundColor: scaffoldBg.withValues(alpha: 0.95),
             surfaceTintColor: Colors.transparent,
             title: Row(
               children: [
-                Container(
+                SvgPicture.asset(
+                  'assets/images/bioClockLeafLogo.svg',
                   width: 32,
                   height: 32,
-                  decoration: BoxDecoration(
-                    color: AppTheme.emeraldCore,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.emeraldCore.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                      )
-                    ],
-                  ),
-                  child:
-                      const Icon(Icons.eco, color: AppTheme.bgDeep, size: 18),
                 ),
                 const SizedBox(width: 12),
                 Text('Bio Clock',
                     style: GoogleFonts.nunito(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white)),
+                        color: onSurface)),
               ],
             ),
             actions: [
@@ -83,7 +80,7 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   );
                 },
-                icon: const Icon(Icons.notifications_active,
+                icon: const Icon(LucideIcons.bell,
                     color: AppTheme.emeraldBrite),
               ),
               const SizedBox(width: 8),
@@ -96,35 +93,60 @@ class HomeScreen extends ConsumerWidget {
               delegate: SliverChildListDelegate([
                 const SizedBox(height: 16),
 
-                // ── Hero Orb Section ────────────
+                // ── The Chrono-Seed ────────────
                 Center(
-                  child: const StatusOrb(
-                    size: 150,
-                    baseColor: AppTheme.emeraldCore,
-                    label: 'Bio-Clock AI Ready',
-                    sublabel: 'Claude 4.5 Haiku Active',
-                  ).animate().fadeIn(duration: 600.ms).scale(
-                        begin: const Offset(0.9, 0.9),
-                        curve: Curves.easeOutBack,
-                      ),
+                  child: SizedBox(
+                    height: 320, // Strict height guard to prevent cards dropping or overlapping
+                    child: const ChronoSeed(
+                      size: 260,
+                    ).animate().fadeIn(duration: 600.ms).scale(
+                          begin: const Offset(0.9, 0.9),
+                          curve: Curves.easeOutBack,
+                        ),
+                  ),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 12),
+                
+                // Labels below the orb
+                Center(
+                  child: Column(
+                    children: [
+                      Text(
+                        'Bio-Clock AI Ready',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.emeraldCore,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Claude 4.5 Haiku Active',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
 
                 // ── Feature Walkthrough ClayCards ──
 
                 // 1. Smart Scanning
                 ClayCard(
                   glow: true,
-                  baseColor: AppTheme.surfaceBase,
-                  onTap: () => context.go('/scan'),
+                  baseColor: cardBase,
+                  peakColor: cardPeak,
                   child: Row(
                     children: [
-                      const ClayPill(
-                        color: AppTheme.emeraldCore,
-                        glow: false,
-                        child: Icon(Icons.qr_code_scanner,
-                            color: AppTheme.bgDeep, size: 24),
+                      const TwoToneIcon(
+                        icon: Icons.qr_code_scanner, size: 26,
+                        colorA: Color(0xFF39FF14), colorB: Color(0xFF00BFA5), // Neon Green → Teal
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -135,12 +157,12 @@ class HomeScreen extends ConsumerWidget {
                                 style: GoogleFonts.nunito(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white)),
+                                    color: onSurface)),
                             const SizedBox(height: 4),
                             Text(
-                                'Auto-detect produce freshness in seconds via AI.',
+                                'Our AI-powered engine auto-detects 61+ produce classes in seconds. Using localized PyTorch Lite models, it identifies visual spoilage cues with 85%+ accuracy without requiring manual user input or cloud-only shutter delays.',
                                 style: GoogleFonts.dmSans(
-                                    fontSize: 13, color: AppTheme.textMuted)),
+                                    fontSize: 13, color: mutedText)),
                           ],
                         ),
                       ),
@@ -152,20 +174,56 @@ class HomeScreen extends ConsumerWidget {
 
                 // 2. Live Graph (Waveform preview)
                 ClayCard(
-                  onTap: () => context.go('/graph'),
+                  baseColor: cardBase,
+                  peakColor: cardPeak,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Icon(Icons.show_chart,
-                              color: AppTheme.emeraldBrite, size: 24),
-                          const SizedBox(width: 12),
-                          Text('Live RUL Graph',
-                              style: GoogleFonts.nunito(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white)),
+                          Row(
+                            children: [
+                              const TwoToneIcon(
+                                icon: Icons.show_chart, size: 26,
+                                colorA: Color(0xFF00E5FF), colorB: Color(0xFF2979FF), // Cyan → Blue
+                              ),
+                              const SizedBox(width: 12),
+                              Text('Live RUL Graph',
+                                  style: GoogleFonts.nunito(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: onSurface)),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00FFCC).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: const Color(0xFF00FFCC).withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6, height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF00FFCC),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text('LIVE · Chennai',
+                                    style: GoogleFonts.spaceMono(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF00FFCC))),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -173,8 +231,29 @@ class HomeScreen extends ConsumerWidget {
                         height: 60,
                         width: double.infinity,
                         child: CustomPaint(
-                          painter: WaveformPainter(),
+                          painter: ChennaiAreaPainter(),
                         ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('30°C  ·  70% Humidity',
+                              style: GoogleFonts.spaceMono(
+                                  fontSize: 11,
+                                  color: const Color(0xFF00FFCC).withValues(alpha: 0.7))),
+                          Text('Q₁₀ = 2.41x',
+                              style: GoogleFonts.spaceMono(
+                                  fontSize: 11,
+                                  color: AppTheme.emeraldBrite,
+                                  fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Visualize the biological decay of your food in real-time. This interactive forecast syncs with local weather data to simulate how temperature and humidity spikes accelerate or decelerate the remaining useful life of your inventory.',
+                        style: GoogleFonts.dmSans(
+                            fontSize: 13, color: mutedText),
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -182,7 +261,7 @@ class HomeScreen extends ConsumerWidget {
                         children: [
                           Text('Remaining Useful Life',
                               style: GoogleFonts.dmSans(
-                                  fontSize: 12, color: AppTheme.textMuted)),
+                                  fontSize: 12, color: mutedText)),
                           Text('Forecast',
                               style: GoogleFonts.spaceMono(
                                   fontSize: 12,
@@ -196,45 +275,44 @@ class HomeScreen extends ConsumerWidget {
 
                 const SizedBox(height: 24),
 
-                // 3. Inventory Vault (Purple tint)
+                // 3. Inventory Vault (Violet → Blue)
                 ClayCard(
-                  onTap: () => context.go('/inventory'),
+                  baseColor: cardBase,
+                  peakColor: cardPeak,
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppTheme.accentPurple.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color:
-                                  AppTheme.accentPurple.withValues(alpha: 0.3)),
-                        ),
-                        child: const Icon(Icons.inventory_2,
-                            color: AppTheme.accentPurple, size: 24),
+                      const TwoToneIcon(
+                        icon: Icons.inventory_2, size: 26,
+                        colorA: Color(0xFFBB86FC), colorB: Color(0xFF6200EA), // Violet → Deep Purple
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Inventory Vault',
+                            Text('Inventory',
                                 style: GoogleFonts.nunito(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white)),
+                                    color: onSurface)),
                             const SizedBox(height: 4),
                             Row(
                               children: [
                                 const Icon(Icons.cloud_sync,
-                                    color: AppTheme.accentPurple, size: 14),
+                                    color: Color(0xFFBB86FC), size: 14),
                                 const SizedBox(width: 6),
                                 Text('S3 Sync Active',
                                     style: GoogleFonts.spaceMono(
                                         fontSize: 11,
-                                        color: AppTheme.accentPurple,
+                                        color: const Color(0xFFBB86FC),
                                         fontWeight: FontWeight.bold)),
                               ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "Manage your household's biological waste footprint. Our S3-synced vault tracks every item, providing batch predictions for your entire fridge so you know exactly which items to consume first based on real-time spoilage telemetry.",
+                              style: GoogleFonts.dmSans(
+                                  fontSize: 13, color: mutedText),
                             ),
                           ],
                         ),
@@ -245,39 +323,43 @@ class HomeScreen extends ConsumerWidget {
 
                 const SizedBox(height: 24),
 
-                // 4. AI Preservation (Amber tint)
+                // 4. AI Preservation (Gold → Orange)
                 ClayCard(
+                  baseColor: cardBase,
+                  peakColor: cardPeak,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.lightbulb,
-                              color: AppTheme.accentAmber, size: 24),
+                          const TwoToneIcon(
+                            icon: Icons.lightbulb, size: 26,
+                            colorA: Color(0xFFFFC000), colorB: Color(0xFFFF6D00), // Gold → Orange
+                          ),
                           const SizedBox(width: 12),
                           Text('AI Preservation',
                               style: GoogleFonts.nunito(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white)),
+                                  color: onSurface)),
                         ],
                       ),
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppTheme.bgDeep,
+                          color: isDark ? const Color(0xFF1A1200) : const Color(0xFFFFF8E1), // deep amber-tinted
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                               color:
-                                  AppTheme.accentAmber.withValues(alpha: 0.2)),
+                                  const Color(0xFFFFC000).withValues(alpha: 0.2)),
                         ),
                         child: Text(
-                          '"Apples release ethylene gas. Store them separately from avocados to slow down ripening by 2.4x."',
+                          "Apples release ethylene gas. Store them separately from avocados to slow down ripening by 2.4x. This context-aware strategy is generated by our neuro-symbolic reasoning engine to extend the life of your specific produce by up to 3x.",
                           style: GoogleFonts.dmSans(
                               fontSize: 13,
                               color:
-                                  AppTheme.accentAmber.withValues(alpha: 0.9),
+                                  const Color(0xFFFFC000).withValues(alpha: 0.9), // Gold-Amber
                               fontStyle: FontStyle.italic),
                         ),
                       ),
@@ -287,22 +369,26 @@ class HomeScreen extends ConsumerWidget {
 
                 const SizedBox(height: 24),
 
-                // 5. Neuro-Symbolic Engine (Q10 Formula)
+                // 5. Neuro-Symbolic Engine (Mint → Emerald)
                 ClayCard(
                   glow: false,
+                  baseColor: cardBase,
+                  peakColor: cardPeak,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.psychology,
-                              color: AppTheme.emeraldBrite, size: 24),
+                          const TwoToneIcon(
+                            icon: LucideIcons.brain, size: 26,
+                            colorA: Color(0xFF00FFCC), colorB: Color(0xFF10B981), // Cyber-Mint → Emerald
+                          ),
                           const SizedBox(width: 12),
                           Text('Neuro-Symbolic Engine',
                               style: GoogleFonts.nunito(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white)),
+                                  color: onSurface)),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -310,20 +396,11 @@ class HomeScreen extends ConsumerWidget {
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 24),
                         decoration: BoxDecoration(
-                          color: AppTheme.bgDeep,
+                          color: isDark ? const Color(0xFF0A0F14) : const Color(0xFFE8F5E9),
                           borderRadius: BorderRadius.circular(16),
-                          // Faint emerald grid background
-                          image: DecorationImage(
-                            image: const NetworkImage(
-                                'https://www.transparenttextures.com/patterns/cubes.png'), // Placeholder for grid pattern
-                            colorFilter: ColorFilter.mode(
-                                AppTheme.emeraldGlow.withValues(alpha: 0.05),
-                                BlendMode.srcATop),
-                            repeat: ImageRepeat.repeat,
-                          ),
                           border: Border.all(
                               color:
-                                  AppTheme.emeraldCore.withValues(alpha: 0.2)),
+                                  const Color(0xFF00FFCC).withValues(alpha: 0.2)),
                         ),
                         child: Center(
                           child: Text(
@@ -331,7 +408,7 @@ class HomeScreen extends ConsumerWidget {
                             style: GoogleFonts.spaceMono(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.emeraldBrite,
+                                color: const Color(0xFF00FFCC), // Cyber-Mint
                                 letterSpacing: 1.5),
                           ),
                         ),
@@ -341,8 +418,14 @@ class HomeScreen extends ConsumerWidget {
                         child: Text(
                           'Q10 Thermodynamic Spoilage Coefficient',
                           style: GoogleFonts.spaceMono(
-                              fontSize: 10, color: AppTheme.textMuted),
+                              fontSize: 10, color: mutedText),
                         ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "The Bio-Clock uses thermodynamic spoilage coefficients to translate environmental stress into hours. By modeling molecular decay, our AI provides a 94% accurate biological verdict for your food's safety.",
+                        style: GoogleFonts.dmSans(
+                            fontSize: 13, color: mutedText),
                       ),
                     ],
                   ),
@@ -357,7 +440,7 @@ class HomeScreen extends ConsumerWidget {
                     children: [
                       Text('Waste Prevented: ',
                           style: GoogleFonts.nunito(
-                              fontSize: 16, color: AppTheme.textSecondary)),
+                              fontSize: 16, color: mutedText)),
                       AnimatedCounter(
                         value: 284,
                         suffix: ' kg',
@@ -380,7 +463,36 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class WaveformPainter extends CustomPainter {
+class TwoToneIcon extends StatelessWidget {
+  final IconData icon;
+  final double size;
+  final Color colorA;
+  final Color colorB;
+  
+  const TwoToneIcon({
+    super.key,
+    required this.icon,
+    this.size = 24,
+    this.colorA = const Color(0xFF39FF14),
+    this.colorB = const Color(0xFF00BFA5),
+  });
+  
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      shaderCallback: (Rect bounds) {
+        return LinearGradient(
+          colors: [colorA, colorB],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ).createShader(bounds);
+      },
+      child: Icon(icon, color: Colors.white, size: size),
+    );
+  }
+}
+
+class ChennaiAreaPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
@@ -392,25 +504,25 @@ class WaveformPainter extends CustomPainter {
     final path = Path();
     path.moveTo(0, size.height * 0.2);
 
-    // Create a stylized descending wave
-    final random = math.Random(42);
+    // Create a stylized descending wave for Chennai Forecast
+    final random = math.Random(10);
     double x = 0;
     while (x < size.width) {
       x += 20;
       double y = size.height * 0.2 +
           (x / size.width) * size.height * 0.7; // general downward trend
-      y += (random.nextDouble() - 0.5) * 15; // noise
+      y += (random.nextDouble() - 0.5) * 15; // noise representing heat index spikes
       path.lineTo(x, y);
     }
 
-    // Add a gentle glow below the line
+    // Add a vibrant gradient glow below the line (Area Chart)
     final fillPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          AppTheme.emeraldCore.withValues(alpha: 0.3),
-          AppTheme.bgDeep.withValues(alpha: 0.0),
+          const Color(0xFF39FF14).withValues(alpha: 0.4), // Neon Green
+          const Color(0xFF0A1A10).withValues(alpha: 0.0), // Faded to charcoal forest
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.fill;

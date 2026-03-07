@@ -7,6 +7,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../shared/core/app_theme.dart';
 import '../../../shared/core/time_utils.dart';
 import '../../../shared/data/weather_service.dart';
+import '../../../shared/data/api_client.dart';
 import '../../../shared/ui/glass_card.dart';
 
 /// Graph page — live/simulation RUL decay graph.
@@ -19,21 +20,40 @@ class GraphScreen extends ConsumerStatefulWidget {
 
 class _GraphScreenState extends ConsumerState<GraphScreen> {
   bool _isLive = false;
-  double _temp = 25;
-  double _humidity = 65;
+  LiveWeatherData _weather = const LiveWeatherData(
+    temperature: 30.0,
+    humidity: 70.0,
+    city: 'Local',
+    isLive: false,
+  );
   static const double _baselineTemp = 20;
   static const double _baselineRUL = 48;
-  Timer? _liveTimer;
+  Timer? _weatherTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _weather = LiveWeatherData(
+      temperature: WeatherService.getCurrentTemperature(),
+      humidity: WeatherService.getCurrentHumidity(),
+      city: WeatherService.getCityName(),
+      isLive: false,
+    );
+    // Refresh mock weather every minute if not in Live mode
+    _weatherTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (!_isLive) _updateMockWeather();
+    });
+  }
 
   double get _q10Factor =>
-      math.pow(2.0, (_temp - _baselineTemp) / 10).toDouble();
-  double get _humidityFactor => 1.0 + ((_humidity - 50) / 100 * 0.3);
+      math.pow(2.0, (_weather.temperature - _baselineTemp) / 10).toDouble();
+  double get _humidityFactor => 1.0 + ((_weather.humidity - 50) / 100 * 0.3);
   double get _adjustedRUL => _baselineRUL / (_q10Factor * _humidityFactor);
 
   Color get _tempColor {
-    if (_temp <= 10) return AppTheme.accentCyan;
-    if (_temp <= 25) return AppTheme.accentGreen;
-    if (_temp <= 35) return AppTheme.accentAmber;
+    if (_weather.temperature <= 10) return AppTheme.accentCyan;
+    if (_weather.temperature <= 25) return AppTheme.accentGreen;
+    if (_weather.temperature <= 35) return AppTheme.accentAmber;
     return AppTheme.accentRed;
   }
 
@@ -45,7 +65,7 @@ class _GraphScreenState extends ConsumerState<GraphScreen> {
 
   @override
   void dispose() {
-    _liveTimer?.cancel();
+    _weatherTimer?.cancel();
     super.dispose();
   }
 
@@ -53,18 +73,31 @@ class _GraphScreenState extends ConsumerState<GraphScreen> {
     setState(() => _isLive = live);
     if (live) {
       _updateLiveWeather();
-      _liveTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      _weatherTimer = Timer.periodic(const Duration(seconds: 3), (_) {
         _updateLiveWeather();
       });
     } else {
-      _liveTimer?.cancel();
+      _weatherTimer?.cancel();
+      _updateMockWeather(); // Revert to mock data when switching off live
     }
   }
 
-  void _updateLiveWeather() {
+  void _updateMockWeather() {
     setState(() {
-      _temp = WeatherService.getCurrentTemperature();
-      _humidity = WeatherService.getCurrentHumidity();
+      _weather = LiveWeatherData(
+        temperature: WeatherService.getCurrentTemperature(),
+        humidity: WeatherService.getCurrentHumidity(),
+        city: WeatherService.getCityName(),
+        isLive: false,
+      );
+    });
+  }
+
+  Future<void> _updateLiveWeather() async {
+    final liveData = await WeatherService.fetchLiveWeather(ref.read(apiClientProvider));
+    if (!mounted) return;
+    setState(() {
+      _weather = liveData;
     });
   }
 
@@ -118,7 +151,7 @@ class _GraphScreenState extends ConsumerState<GraphScreen> {
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -127,6 +160,13 @@ class _GraphScreenState extends ConsumerState<GraphScreen> {
               children: [
                 _metricCard(context, 'Q₁₀', '${_q10Factor.toStringAsFixed(2)}×',
                     AppTheme.accentGreen),
+                const SizedBox(width: 10),
+                _metricCard(
+                  context,
+                  'Temperature',
+                  '${_weather.temperature.toStringAsFixed(1)}°C',
+                  _tempColor,
+                ),
                 const SizedBox(width: 10),
                 _metricCard(
                     context,
@@ -493,10 +533,11 @@ class _GraphScreenState extends ConsumerState<GraphScreen> {
           children: [
             Row(
               children: [
-                const Text('Environmental Factors',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                const Spacer(),
+                const Expanded(
+                  child: Text('Environmental Factors',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
                 if (_isLive)
                   Container(
                     padding:
@@ -539,16 +580,15 @@ class _GraphScreenState extends ConsumerState<GraphScreen> {
             const SizedBox(height: 24),
 
             // Temperature
-            Row(
+            Wrap(
+              spacing: 10,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Icon(Icons.thermostat, color: _tempColor, size: 22),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text('Temperature',
-                      style: TextStyle(color: context.ext.textSecondary)),
-                ),
+                Text('Temperature',
+                    style: TextStyle(color: context.ext.textSecondary)),
                 Text(
-                  '${_temp.toStringAsFixed(1)}°C',
+                  '${_weather.temperature.toStringAsFixed(1)}°C',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
@@ -566,10 +606,15 @@ class _GraphScreenState extends ConsumerState<GraphScreen> {
                   overlayColor: _tempColor.withValues(alpha: 0.15),
                 ),
                 child: Slider(
-                  value: _temp,
+                  value: _weather.temperature,
                   min: 0,
                   max: 45,
-                  onChanged: (v) => setState(() => _temp = v),
+                  onChanged: (v) => setState(() => _weather = LiveWeatherData(
+                    temperature: v,
+                    humidity: _weather.humidity,
+                    city: _weather.city,
+                    isLive: _weather.isLive,
+                  )),
                 ),
               ),
               Row(
@@ -588,17 +633,16 @@ class _GraphScreenState extends ConsumerState<GraphScreen> {
             const SizedBox(height: 24),
 
             // Humidity
-            Row(
+            Wrap(
+              spacing: 10,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 const Icon(Icons.water_drop,
                     color: AppTheme.accentCyan, size: 22),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text('Humidity',
-                      style: TextStyle(color: context.ext.textSecondary)),
-                ),
+                Text('Humidity',
+                    style: TextStyle(color: context.ext.textSecondary)),
                 Text(
-                  '${_humidity.toStringAsFixed(0)}%',
+                  '${_weather.humidity.toStringAsFixed(0)}%',
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
@@ -616,10 +660,15 @@ class _GraphScreenState extends ConsumerState<GraphScreen> {
                   overlayColor: AppTheme.accentCyan.withValues(alpha: 0.15),
                 ),
                 child: Slider(
-                  value: _humidity,
+                  value: _weather.humidity,
                   min: 20,
                   max: 95,
-                  onChanged: (v) => setState(() => _humidity = v),
+                  onChanged: (v) => setState(() => _weather = LiveWeatherData(
+                    temperature: _weather.temperature,
+                    humidity: v,
+                    city: _weather.city,
+                    isLive: _weather.isLive,
+                  )),
                 ),
               ),
               Row(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../shared/core/app_theme.dart';
 import '../../../shared/ui/clay_card.dart';
 import 'dart:math' as math;
@@ -43,24 +44,24 @@ class _PitchDashboardState extends State<PitchDashboard> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  _buildInfraRow(Icons.phone_iphone, 'Flutter Edge Node',
+                  _buildInfraRow(LucideIcons.smartphone, 'Flutter Edge Node',
                       'Sends 64-class logits + Metadata'),
                   _buildInfraLine(),
-                  _buildInfraRow(Icons.api, 'Amazon API Gateway',
+                  _buildInfraRow(LucideIcons.zap, 'Amazon API Gateway',
                       'Rest Endpoint (eu-north-1)'),
                   _buildInfraLine(),
-                  _buildInfraRow(Icons.memory, 'AWS Lambda',
+                  _buildInfraRow(LucideIcons.cpu, 'AWS Lambda',
                       'Runs Core Neuro-Symbolic Engine'),
                   _buildInfraLine(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       Expanded(
-                          child: _buildInfraRow(Icons.auto_awesome,
+                          child: _buildInfraRow(LucideIcons.sparkles,
                               'Amazon Bedrock', 'Claude 4.5 Haiku Reasoning')),
                       const SizedBox(width: 8),
                       Expanded(
-                          child: _buildInfraRow(Icons.storage,
+                          child: _buildInfraRow(LucideIcons.database,
                               'Amazon DynamoDB', 'State / Q10 Timelines')),
                     ],
                   ),

@@ -1,13 +1,18 @@
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:camera/camera.dart';
 import '../../../shared/core/app_theme.dart';
 import '../../../shared/core/app_settings_provider.dart';
 import '../../../shared/data/inventory_provider.dart';
 import '../../../shared/data/weather_service.dart';
 import '../../../shared/core/time_utils.dart';
+import '../../../shared/core/aws_config.dart';
+import '../../../shared/data/api_client.dart';
+import '../../../shared/data/auth_provider.dart';
 import '../../../shared/ui/glass_card.dart';
 import '../../../shared/ui/produce_emoji.dart';
 
@@ -29,6 +34,12 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
   late AnimationController _pulseController;
   String _selectedStorage = 'fridge';
   bool _showWork = false;
+  bool _scanFailed = false;
+
+  // Real Camera
+  CameraController? _cameraController;
+  bool _isCameraInitialized = false;
+  bool _cameraPermissionDenied = false;
 
   // Mock result data
   String _resultStatus = 'fresh';
@@ -54,6 +65,44 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
 
     // Start the loading phase
     _startLoading();
+    _initCamera();
+  }
+
+  Future<void> _initCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        throw Exception('No cameras available');
+      }
+
+      // Try for front camera on Web, default back on mobile
+      final camera = cameras.firstWhere(
+        (c) => c.lensDirection == CameraLensDirection.front,
+        orElse: () => cameras.first,
+      );
+
+      _cameraController = CameraController(
+        camera,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+
+      await _cameraController!.initialize();
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = true;
+          _cameraPermissionDenied = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Camera init failed: $e');
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = false;
+          _cameraPermissionDenied = true;
+        });
+      }
+    }
   }
 
   void _startLoading() async {
@@ -80,26 +129,114 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     if (settings.hapticFeedback) {
       HapticFeedback.mediumImpact();
     }
+    
+    // Capture real image
+    XFile? image;
+    if (_isCameraInitialized && _cameraController != null) {
+      try {
+        image = await _cameraController!.takePicture();
+      } catch (e) {
+        debugPrint('Capture failed: $e');
+      }
+    }
+
     _scanLineController.stop();
-    setState(() => _phase = ScanPhase.storageSelect);
+    setState(() {
+      _phase = ScanPhase.storageSelect;
+      _capturedImage = image;
+    });
   }
+
+  XFile? _capturedImage;
 
   AppSettings get settings => ref.read(appSettingsProvider);
 
   void _onStorageSelected(String storage) async {
+    // Debounce / State Lock
+    if (_phase == ScanPhase.analyzing) return;
+
     setState(() {
       _selectedStorage = storage;
       _phase = ScanPhase.analyzing;
+      _scanFailed = false;
     });
 
     if (settings.hapticFeedback) {
       HapticFeedback.lightImpact();
     }
 
-    // Simulate analysis
-    await Future.delayed(const Duration(milliseconds: 1500));
+    if (AwsConfig.useCloudBackend) {
+      // ── API Integration (Rekognition + Claude) ──
+      try {
+        final api = ref.read(apiClientProvider);
+        
+        // Extract raw sub from the auth token for S3 key partitioning
+        final authState = ref.read(authProvider);
+        String? userSub;
+        if (authState.idToken != null) {
+          try {
+            final parts = authState.idToken!.split('.');
+            if (parts.length == 3) {
+              final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+              final map = jsonDecode(payload) as Map<String, dynamic>;
+              userSub = map['sub'] as String?;
+            }
+          } catch (_) {}
+        }
+
+        final imageBytes = _capturedImage != null 
+            ? await _capturedImage!.readAsBytes() 
+            : Uint8List(0);
+        
+        final scanResult = await api.scanProduce(imageBytes, userId: userSub);
+        
+        _resultName = scanResult['name'] as String? ?? 'Unknown';
+        _resultStatus = scanResult['status'] as String? ?? 'fresh';
+        _resultConfidence = (scanResult['confidence'] as num?)?.toInt() ?? 85;
+        _resultRul = (scanResult['rul'] as num?)?.toInt() ?? 2880;
+
+        // Fetch preservation tip
+        try {
+          await api.getPreservationTip(_resultName, _resultStatus, _selectedStorage);
+        } catch (_) {}
+      } catch (e) {
+        debugPrint('Scan API failed: $e');
+        // Show Manual Entry fallback instead of silent mock
+        if (mounted) {
+          setState(() => _scanFailed = true);
+          return;
+        }
+      }
+    } else {
+      // ── Mock Logic ──
+      await Future.delayed(const Duration(milliseconds: 1500));
+      _generateMockResult(storage);
+    }
+
     if (!mounted) return;
 
+    // Add to inventory
+    ref.read(inventoryProvider.notifier).addItem(ProduceItem(
+          id: 's${DateTime.now().millisecondsSinceEpoch}',
+          name: _resultName,
+          rul: _resultRul,
+          status: _resultStatus,
+          icon: Icons.eco,
+          iconColor: _statusColor(_resultStatus),
+          emoji: ProduceEmoji.getEmoji(_resultName),
+          storage: _selectedStorage,
+          addedAt: DateTime.now(),
+        ));
+
+    // Auto-refresh inventory from cloud after scan
+    if (AwsConfig.useCloudBackend) {
+      ref.read(inventoryProvider.notifier).fetchFromCloud();
+    }
+
+    setState(() => _phase = ScanPhase.result);
+  }
+
+  void _generateMockResult(String storage) {
     // Generate mock result based on storage
     final random = math.Random();
     final statuses = ['fresh', 'ripening', 'soon_rotten', 'rotten'];
@@ -127,21 +264,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
       _resultStatus = statuses[random.nextInt(3)]; // not rotten often at room
       _resultRul = (6 + random.nextInt(36)) * 60;
     }
-
-    // Add to inventory
-    ref.read(inventoryProvider.notifier).addItem(ProduceItem(
-          id: 's${DateTime.now().millisecondsSinceEpoch}',
-          name: _resultName,
-          rul: _resultRul,
-          status: _resultStatus,
-          icon: Icons.eco,
-          iconColor: _statusColor(_resultStatus),
-          emoji: ProduceEmoji.getEmoji(_resultName),
-          storage: _selectedStorage,
-          addedAt: DateTime.now(),
-        ));
-
-    setState(() => _phase = ScanPhase.result);
   }
 
   Color _statusColor(String status) => switch (status) {
@@ -172,6 +294,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     _reticleController.reset();
     _scanLineController.reset();
     _showWork = false;
+    _scanFailed = false;
     _startLoading();
   }
 
@@ -180,6 +303,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     _reticleController.dispose();
     _scanLineController.dispose();
     _pulseController.dispose();
+    _cameraController?.dispose();
     super.dispose();
   }
 
@@ -199,13 +323,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
             ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 400),
-        child: switch (_phase) {
-          ScanPhase.loading => _buildLoadingPhase(),
-          ScanPhase.scanning => _buildScanningPhase(),
-          ScanPhase.storageSelect => _buildStorageSelect(),
-          ScanPhase.analyzing => _buildAnalyzing(),
-          ScanPhase.result => _buildResult(),
-        },
+        child: _scanFailed
+            ? _buildManualEntry()
+            : switch (_phase) {
+                ScanPhase.loading => _buildLoadingPhase(),
+                ScanPhase.scanning => _buildScanningPhase(),
+                ScanPhase.storageSelect => _buildStorageSelect(),
+                ScanPhase.analyzing => _buildAnalyzing(),
+                ScanPhase.result => _buildResult(),
+              },
       ),
     );
   }
@@ -285,16 +411,34 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Dark camera background
+                // Camera preview or fallback
                 Container(
                   width: 300,
                   height: 300,
                   decoration: BoxDecoration(
-                    color: context.isDark
-                        ? Colors.black.withValues(alpha: 0.4)
-                        : Colors.black.withValues(alpha: 0.06),
+                    color: Colors.black,
                     borderRadius: BorderRadius.circular(16),
                   ),
+                  clipBehavior: Clip.antiAlias,
+                  child: _cameraPermissionDenied
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.videocam_off, color: Colors.white54, size: 40),
+                              const SizedBox(height: 12),
+                              const Text('Camera Blocked', style: TextStyle(color: Colors.white70)),
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: _initCamera,
+                                child: const Text('Grant Permissions'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : (_isCameraInitialized && _cameraController != null)
+                          ? CameraPreview(_cameraController!)
+                          : const Center(child: CircularProgressIndicator()),
                 ),
 
                 // Expanding reticle — 4 corner brackets that expand
@@ -868,6 +1012,118 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Manual Entry Fallback (AI failure / Bedrock timeout) ──────────
+  Widget _buildManualEntry() {
+    final nameController = TextEditingController();
+    return Padding(
+      key: const ValueKey('manual_entry'),
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.accentAmber.withValues(alpha: 0.12),
+              ),
+              child: const Icon(Icons.edit_note, color: AppTheme.accentAmber, size: 36),
+            ).animate().fadeIn().scale(begin: const Offset(0.8, 0.8)),
+            const SizedBox(height: 20),
+            const Text(
+              'AI Unavailable',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            ).animate().fadeIn(delay: 100.ms),
+            const SizedBox(height: 8),
+            Text(
+              'The scan service is temporarily unavailable.\nYou can add the item manually.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: context.ext.textMuted, height: 1.5),
+            ).animate().fadeIn(delay: 200.ms),
+            const SizedBox(height: 28),
+            GlassCard(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: TextField(
+                  controller: nameController,
+                  style: const TextStyle(fontSize: 15),
+                  decoration: InputDecoration(
+                    hintText: 'Enter produce name (e.g. Tomato)',
+                    hintStyle: TextStyle(color: context.ext.textMuted),
+                    border: InputBorder.none,
+                    prefixIcon: Icon(Icons.eco, color: context.ext.textMuted, size: 20),
+                  ),
+                ),
+              ),
+            ).animate().fadeIn(delay: 300.ms),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _resetScan,
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: context.ext.glassBorder),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Retry Scan', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.gradientPrimary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        final name = nameController.text.trim();
+                        if (name.isEmpty) return;
+                        ref.read(inventoryProvider.notifier).addItem(ProduceItem(
+                              id: 'm${DateTime.now().millisecondsSinceEpoch}',
+                              name: name,
+                              rul: 48 * 60, // Default 48h
+                              status: 'fresh',
+                              icon: Icons.eco,
+                              iconColor: AppTheme.accentGreen,
+                              emoji: ProduceEmoji.getEmoji(name),
+                              storage: _selectedStorage,
+                              addedAt: DateTime.now(),
+                            ));
+                        _resultName = name;
+                        _resultStatus = 'fresh';
+                        _resultConfidence = 100;
+                        _resultRul = 48 * 60;
+                        setState(() {
+                          _scanFailed = false;
+                          _phase = ScanPhase.result;
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.add, size: 18, color: Colors.white),
+                      label: const Text('Add Item',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ),
+              ],
+            ).animate().fadeIn(delay: 400.ms),
           ],
         ),
       ),

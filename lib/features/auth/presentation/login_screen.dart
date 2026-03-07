@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../shared/core/app_theme.dart';
+import '../../../shared/data/auth_provider.dart';
 import '../../../shared/ui/glass_card.dart';
 
 /// Glass-card login screen with biometric option.
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController(text: 'demo@bioclock.app');
   final _passwordController = TextEditingController(text: '••••••••');
   bool _obscure = true;
@@ -25,14 +29,57 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
-    context.go('/');
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter email and password')),
+      );
+      return;
+    }
+    final success = await ref.read(authProvider.notifier).signIn(email, password);
+    if (mounted && success) {
+      context.go('/');
+    } else if (mounted) {
+      final authState = ref.read(authProvider);
+      final error = authState.error ?? 'Sign in failed';
+
+      // Debug Entry Bypass
+      if ((error.contains('401') || error.contains('400')) && authState.idToken != null) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => Center(
+            child: SvgPicture.asset(
+              'assets/images/bioClockLeafLogo.svg',
+              width: 150,
+            ).animate().fadeIn().scale(),
+          ),
+        );
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) context.go('/');
+        });
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+    }
   }
 
-  void _biometricLogin() async {
-    setState(() => _biometricSuccess = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) context.go('/');
+  Future<void> _biometricLogin() async {
+    final success = await ref.read(authProvider.notifier).biometricSignIn();
+    if (mounted && success) {
+      setState(() => _biometricSuccess = true);
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) context.go('/');
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Biometric auth not available on this platform')),
+      );
+    }
   }
 
   @override
@@ -61,16 +108,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 60),
 
                 // Logo
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: AppTheme.gradientPrimary,
-                    boxShadow:
-                        AppTheme.neonGlow(AppTheme.accentGreen, intensity: 0.4),
-                  ),
-                  child: const Icon(Icons.eco, color: Colors.white, size: 36),
+                SvgPicture.asset(
+                  'assets/images/bioClockLeafLogo.svg',
+                  width: 120,
                 ).animate().fadeIn(duration: 600.ms).scale(
                       begin: const Offset(0.8, 0.8),
                       curve: Curves.easeOutBack,
@@ -121,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: const TextStyle(
                               color: Colors.white, fontSize: 15),
                           decoration: InputDecoration(
-                            prefixIcon: Icon(Icons.email_outlined,
+                            prefixIcon: Icon(LucideIcons.mail,
                                 color: Colors.white.withValues(alpha: 0.4),
                                 size: 20),
                             hintText: 'Enter your email',
@@ -164,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: const TextStyle(
                               color: Colors.white, fontSize: 15),
                           decoration: InputDecoration(
-                            prefixIcon: Icon(Icons.lock_outline,
+                            prefixIcon: Icon(LucideIcons.lock,
                                 color: Colors.white.withValues(alpha: 0.4),
                                 size: 20),
                             suffixIcon: IconButton(
@@ -232,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   intensity: 0.3),
                             ),
                             child: ElevatedButton(
-                              onPressed: _login,
+                              onPressed: ref.watch(authProvider).isLoading ? null : _login,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
@@ -240,14 +280,23 @@ class _LoginScreenState extends State<LoginScreen> {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: const Text(
-                                'Sign In',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
+                              child: ref.watch(authProvider).isLoading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Sign In',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                             ),
                           ),
                         ),

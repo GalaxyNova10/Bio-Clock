@@ -273,7 +273,133 @@ class AppTheme {
     );
   }
 
-  static ThemeData get lightTheme => darkTheme;
+  // ── Light Theme: Paper-Mint ─────────────────────────────────────
+  static ThemeData get lightTheme {
+    const bgLight = Color(0xFFF0FDF4); // Paper-Mint background
+    const surfaceLight = Color(0xFFFFFFFF);
+    const textDark = Color(0xFF1A2E1A); // Deep charcoal-green
+    const textSecLight = Color(0xFF4A6B4A);
+    const textMutedLight = Color(0xFF8CA38C);
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: bgLight,
+      colorScheme: const ColorScheme.light(
+        primary: emeraldCore,
+        onPrimary: Colors.white,
+        secondary: emeraldBrite,
+        onSecondary: Colors.white,
+        tertiary: accentPurple,
+        onTertiary: Colors.white,
+        surface: surfaceLight,
+        onSurface: textDark,
+        error: statusExpire,
+        onError: Colors.white,
+      ),
+      textTheme: TextTheme(
+        displayLarge: GoogleFonts.nunito(
+          fontSize: 40, fontWeight: FontWeight.w800,
+          color: textDark, height: 1.1, letterSpacing: -1.0,
+        ),
+        displayMedium: GoogleFonts.nunito(
+          fontSize: 28, fontWeight: FontWeight.bold,
+          color: textDark, height: 1.2,
+        ),
+        titleLarge: GoogleFonts.nunito(
+          fontSize: 20, fontWeight: FontWeight.w600, color: textDark,
+        ),
+        titleMedium: GoogleFonts.nunito(
+          fontSize: 18, fontWeight: FontWeight.w700, color: textDark,
+        ),
+        bodyLarge: GoogleFonts.dmSans(
+          fontSize: 16, color: textSecLight, height: 1.5,
+        ),
+        bodyMedium: GoogleFonts.dmSans(
+          fontSize: 14, color: textSecLight, height: 1.5,
+        ),
+        bodySmall: GoogleFonts.dmSans(
+          fontSize: 12, color: textMutedLight,
+        ),
+        labelSmall: GoogleFonts.spaceMono(
+          fontSize: 10, fontWeight: FontWeight.w600,
+          letterSpacing: 1.2, color: textMutedLight,
+        ),
+        labelMedium: GoogleFonts.spaceMono(
+          fontSize: 12, fontWeight: FontWeight.w600, color: textSecLight,
+        ),
+        labelLarge: GoogleFonts.spaceMono(
+          fontSize: 14, fontWeight: FontWeight.w700, color: textDark,
+        ),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        foregroundColor: textDark,
+      ),
+      cardTheme: CardThemeData(
+        color: surfaceLight,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusLg),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: emeraldCore,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radiusMd),
+          ),
+          textStyle: GoogleFonts.nunito(
+            fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.5,
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFFE8F5E9),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(color: Color(0xFFD0E8D0)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(color: Color(0xFFD0E8D0)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(color: emeraldCore, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        hintStyle: const TextStyle(color: textMutedLight),
+      ),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: emeraldCore,
+        inactiveTrackColor: const Color(0xFFD0E8D0),
+        thumbColor: emeraldCore,
+        overlayColor: emeraldCore.withValues(alpha: 0.15),
+        trackHeight: 6,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFFD0E8D0),
+        thickness: 1,
+      ),
+      extensions: const [
+        AppThemeExtension(
+          glassBackground: Color(0x0A000000), // very subtle dark tint on white
+          glassBorder: Color(0x14000000),
+          textMuted: textMutedLight,
+          textSecondary: textSecLight,
+          surfaceDim: surfaceDimLight,
+        ),
+      ],
+    );
+  }
 }
 
 /// Theme extension to carry custom tokens through [ThemeData].

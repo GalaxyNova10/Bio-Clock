@@ -34,7 +34,9 @@ class _DetailViewSheet extends ConsumerWidget {
         color: Color(0xFF0C1018),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Column(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 100),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Drag Handle
@@ -151,7 +153,7 @@ class _DetailViewSheet extends ConsumerWidget {
                                 ? 'Room Temp'
                                 : (value == 'fridge' ? 'Fridge' : 'Freezer');
                             final icon = value == 'room'
-                                ? '🦁'
+                                ? '🧺'
                                 : (value == 'fridge' ? '❄️' : '🧊');
                             return DropdownMenuItem<String>(
                               value: value,
@@ -177,7 +179,7 @@ class _DetailViewSheet extends ConsumerWidget {
             ],
           ),
 
-          const SizedBox(height: 48),
+          const SizedBox(height: 24),
           const Text('SPOILAGE TIMELINE',
               style: TextStyle(
                   fontSize: 12,
@@ -196,6 +198,7 @@ class _DetailViewSheet extends ConsumerWidget {
           _timelineItem('Critical Expiration Notice',
               'Estimated at $remainingTime remaining', Colors.grey),
         ],
+      ),
       ),
     );
   }

@@ -5,14 +5,59 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/core/app_theme.dart';
 import '../../../shared/core/app_settings_provider.dart';
 import '../../../shared/core/theme_provider.dart';
+import '../../../shared/core/aws_config.dart';
+import '../../../shared/data/api_client.dart';
+import '../../../shared/data/auth_provider.dart';
+import '../../../shared/data/inventory_provider.dart';
 import '../../../shared/ui/glass_card.dart';
 
 /// Profile screen — merged Agent + Profile + Settings.
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  Map<String, dynamic>? _stats;
+  bool _isLoadingStats = true;
+  String _name = 'Guest User';
+  String _email = 'demo@bioclock.app';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    // Immediately sync name from auth state (pre-emptively decoded)
+    final authState = ref.read(authProvider);
+    _name = authState.displayName;
+    _email = authState.email ?? 'demo@bioclock.app';
+
+    if (AwsConfig.useCloudBackend) {
+      if (mounted) setState(() => _isLoadingStats = true);
+      try {
+        final api = ref.read(apiClientProvider);
+        final stats = await api.fetchProfileStats();
+        if (mounted) {
+          setState(() {
+            _stats = stats;
+            _isLoadingStats = false;
+          });
+        }
+      } catch (_) {
+        if (mounted) setState(() => _isLoadingStats = false);
+      }
+    } else {
+      if (mounted) setState(() => _isLoadingStats = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final ext = context.ext;
     final settings = ref.watch(appSettingsProvider);
     final themeMode = ref.watch(themeProvider);
@@ -58,11 +103,28 @@ class ProfileScreen extends ConsumerWidget {
                             color: Colors.white, size: 40),
                       ),
                       const SizedBox(height: 14),
-                      const Text('Guest User',
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.w800)),
+                      // Reactive name: watch authProvider for live updates
+                      Builder(builder: (context) {
+                        final authState = ref.watch(authProvider);
+                        final resolvedName = authState.displayName;
+                        // Shimmer placeholder while name is still initializing
+                        if (resolvedName == 'Guest User' && authState.isAuthenticated) {
+                          return Container(
+                            width: 120,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ).animate(onPlay: (c) => c.repeat())
+                            .shimmer(duration: 1200.ms, color: Colors.white.withValues(alpha: 0.15));
+                        }
+                        return Text(resolvedName,
+                            style: const TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.w800));
+                      }),
                       const SizedBox(height: 4),
-                      Text('demo@bioclock.app',
+                      Text(ref.watch(authProvider).email ?? _email,
                           style: TextStyle(fontSize: 13, color: ext.textMuted)),
                     ],
                   ),
@@ -85,20 +147,20 @@ class ProfileScreen extends ConsumerWidget {
                 Row(
                   children: [
                     _impactCard(context, Icons.eco, AppTheme.accentGreen,
-                        '12.5kg', 'CO₂ Saved'),
+                        _isLoadingStats ? 'Sync...' : (_stats != null ? '${_stats!['co2Saved'] ?? '0'}kg' : '12.5kg'), 'CO₂ Saved'),
                     const SizedBox(width: 10),
                     _impactCard(context, Icons.savings, AppTheme.accentAmber,
-                        '₹3,450', 'Money Saved'),
+                        _isLoadingStats ? 'Sync...' : (_stats != null ? '₹${_stats!['moneySaved'] ?? '0'}' : '₹3,450'), 'Money Saved'),
                   ],
                 ).animate().fadeIn(delay: 150.ms, duration: 500.ms),
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    _impactCard(context, Icons.qr_code_scanner,
-                        AppTheme.accentCyan, '47', 'Items Scanned'),
+                    _impactCard(context, Icons.qr_code_scanner, AppTheme.accentCyan,
+                        _isLoadingStats ? 'Sync...' : (_stats != null ? '${_stats!['scans'] ?? '0'}' : '47'), 'Items Scanned'),
                     const SizedBox(width: 10),
                     _impactCard(context, Icons.verified, AppTheme.accentPurple,
-                        '85%', 'Accuracy'),
+                        _isLoadingStats ? 'Sync...' : (_stats != null ? '${_stats!['accuracy'] ?? '0'}%' : '85%'), 'Accuracy'),
                   ],
                 ).animate().fadeIn(delay: 200.ms, duration: 500.ms),
 
@@ -122,11 +184,11 @@ class ProfileScreen extends ConsumerWidget {
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      _badge(context, '🌱', 'First Scan'),
-                      _badge(context, '🏆', '10 Scans'),
-                      _badge(context, '♻️', 'Eco Hero'),
-                      _badge(context, '🧠', 'AI Expert'),
-                      _badge(context, '🥗', 'Zero Waste'),
+                      _badge(context, '🌱', 'First Scan', unlocksAt: 1),
+                      _badge(context, '🏆', '10 Scans', unlocksAt: 10),
+                      _badge(context, '♻️', 'Eco Hero', unlocksAt: 50),
+                      _badge(context, '🧠', 'AI Expert', unlocksAt: 100),
+                      _badge(context, '🥗', 'Zero Waste', unlocksAt: 200),
                     ],
                   ),
                 ).animate().fadeIn(delay: 300.ms, duration: 500.ms),
@@ -150,13 +212,20 @@ class ProfileScreen extends ConsumerWidget {
                     children: [
                       _toggleRow(
                         context,
-                        Icons.science_outlined,
+                        Icons.dashboard_customize_outlined, // Updated icon
                         'Demo Mode',
-                        'Show dummy data for demonstration',
+                        'Fills inventory with simulated items', // Updated description
                         settings.demoMode,
-                        (v) => ref
-                            .read(appSettingsProvider.notifier)
-                            .setDemoMode(v),
+                        (val) { // Updated onChange handler
+                          ref.read(appSettingsProvider.notifier).setDemoMode(val);
+                          if (!val) {
+                            try {
+                              ref.read(inventoryProvider.notifier).fetchFromCloud();
+                            } catch (e) {
+                              debugPrint('Error refreshing inventory: \$e');
+                            }
+                          }
+                        },
                       ),
                       _divider(context),
                       _toggleRow(
@@ -225,8 +294,8 @@ class ProfileScreen extends ConsumerWidget {
                     children: [
                       _navRow(
                         context,
-                        Icons.dark_mode_outlined,
-                        'Dark Mode',
+                        Icons.palette_outlined,
+                        'Theme',
                         _themeModeLabel(themeMode),
                         () => _showThemeDialog(context, ref),
                       ),
@@ -290,7 +359,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ).animate().fadeIn(delay: 550.ms),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 140),
               ]),
             ),
           ),
@@ -339,29 +408,38 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _badge(BuildContext context, String emoji, String label) {
+  Widget _badge(BuildContext context, String emoji, String label, {int unlocksAt = 1}) {
+    final int currentScans = _stats != null ? ((_stats!['scans'] as num?)?.toInt() ?? 0) : 47;
+    final bool isUnlocked = currentScans >= unlocksAt;
+
     return Container(
       width: 72,
-      margin: const EdgeInsets.only(right: 10),
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        color: context.ext.glassBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isUnlocked ? context.ext.glassBorder : Colors.transparent,
+        ),
+      ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: context.ext.glassBackground,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: context.ext.glassBorder),
-            ),
-            child: Center(
-                child: Text(emoji, style: const TextStyle(fontSize: 22))),
-          ),
+          Text(emoji,
+              style: TextStyle(
+                fontSize: 28,
+                color: isUnlocked ? null : Colors.grey.withOpacity(0.2), // Grayscale simulation for emoji
+              )),
           const SizedBox(height: 6),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 9, color: context.ext.textMuted),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: isUnlocked ? context.ext.textMuted : context.ext.textMuted.withOpacity(0.3),
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );

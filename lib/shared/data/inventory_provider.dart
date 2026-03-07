@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:convert';
 import '../core/app_settings_provider.dart';
+import '../core/aws_config.dart';
 import '../ui/produce_emoji.dart';
+import 'api_client.dart';
+import 'auth_provider.dart';
 
 /// Produce item model used across the app, now featuring S3 integration.
 class ProduceItem {
@@ -137,16 +141,19 @@ final List<ProduceItem> demoProduce = [
 
 class InventoryNotifier extends StateNotifier<List<ProduceItem>> {
   final Ref _ref;
+  bool isLoading = false;
 
   InventoryNotifier(this._ref) : super([]) {
     // Listen for demo mode changes
     _ref.listen<AppSettings>(appSettingsProvider, (prev, next) {
       if (prev?.demoMode != next.demoMode) {
         if (next.demoMode) {
+          isLoading = false;
           state = [...demoProduce];
         } else {
-          // Keep only user-scanned items (non-demo IDs don't start with 'd')
-          state = state.where((i) => !i.id.startsWith('d')).toList();
+          isLoading = true;
+          state = []; // Clear mocks and aggressively notify loading state
+          fetchFromCloud(); // Real cloud fetch
         }
       }
     });
@@ -160,6 +167,101 @@ class InventoryNotifier extends StateNotifier<List<ProduceItem>> {
 
   void addItem(ProduceItem item) {
     state = [item, ...state];
+    _syncToCloud(item);
+  }
+
+  /// Helper to decode Cognito JWT specifically extracting the 'sub'
+  String? _getUserIdFromToken() {
+    final token = _ref.read(authProvider).idToken;
+    if (token == null) {
+      final email = _ref.read(authProvider).email;
+      return email != null ? 'USER#$email' : 'USER#UNKNOWN';
+    }
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return 'USER#UNKNOWN';
+      final payloadStr = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+      final payloadMap = jsonDecode(payloadStr);
+      final sub = payloadMap['sub']?.toString();
+      return sub != null ? 'USER#$sub' : 'USER#UNKNOWN';
+    } catch (_) {
+      return 'USER#UNKNOWN';
+    }
+  }
+
+  /// Sync a newly scanned item to DynamoDB.
+  Future<void> _syncToCloud(ProduceItem item) async {
+    if (!AwsConfig.useCloudBackend) return;
+    try {
+      final api = _ref.read(apiClientProvider);
+      final userId = _getUserIdFromToken();
+      await api.addItem({
+        'userId': userId,
+        'id': item.id,
+        'name': item.name,
+        'rul': item.rul,
+        'status': item.status,
+        'storage': item.storage,
+        'emoji': item.emoji,
+      });
+    } catch (_) {
+      // Offline — item stays in local state, sync later
+    }
+  }
+
+  /// Fetch inventory from DynamoDB specifically filtered by the authenticated userId.
+  Future<void> fetchFromCloud() async {
+    if (!AwsConfig.useCloudBackend) return;
+    try {
+      isLoading = true;
+      // notifyListeners() equivalent in Riverpod - we just trigger a state reassignment
+      state = state.isEmpty ? [] : [...state];
+      
+      final api = _ref.read(apiClientProvider);
+      final userId = _getUserIdFromToken();
+      final cloudItems = await api.fetchInventory(userId);
+      
+      final parsed = cloudItems.map((json) => ProduceItem(
+            id: json['SK']?.toString().replaceFirst('ITEM#', '') ?? json['id'] as String,
+            name: json['name'] as String,
+            rul: (json['rul'] as num).toInt(),
+            status: json['status'] as String,
+            icon: Icons.eco,
+            iconColor: const Color(0xFF10B981),
+            emoji: ProduceEmoji.getEmoji(json['name'] as String),
+            storage: json['storage'] as String? ?? 'fridge',
+            addedAt: DateTime.tryParse(json['created_at'] ?? json['addedAt'] ?? '') ??
+                DateTime.now(),
+            s3Url: json['s3_key'] != null ? 'https://${AwsConfig.s3BucketName}.s3.amazonaws.com/${json['s3_key']}' : json['s3Url'] as String?,
+          )).toList();
+          
+      // Merge: keeping only live cloud items to strictly wipe out mock items
+      state = parsed;
+    } catch (_) {
+      // Offline — keep local state
+    } finally {
+      isLoading = false;
+      state = [...state];
+    }
+  }
+
+  /// Mark an item as donated and update the cloud safely.
+  Future<void> donateItem(String itemId) async {
+    final originalState = state;
+    // Optimistic UI update
+    removeItem(itemId);
+    
+    if (AwsConfig.useCloudBackend) {
+      try {
+        final api = _ref.read(apiClientProvider);
+        final userId = _getUserIdFromToken();
+        await api.donateItem(userId ?? 'USER#UNKNOWN', 'ITEM#$itemId');
+      } catch (e) {
+        // Rollback on failure
+        state = originalState;
+        debugPrint('Donation failed: $e');
+      }
+    }
   }
 
   void removeItem(String id) {
@@ -186,8 +288,30 @@ class InventoryNotifier extends StateNotifier<List<ProduceItem>> {
     }).toList();
   }
 
-  void batchPredict() {
-    // Simulate AWS Lambda batch prediction — update RUL using Q10 stress model
+  Future<void> batchPredict() async {
+    if (AwsConfig.useCloudBackend) {
+      try {
+        final api = _ref.read(apiClientProvider);
+        final cloudItems = await api.batchPredict();
+        final parsed = cloudItems.map((json) => ProduceItem(
+              id: json['id'] as String,
+              name: json['name'] as String,
+              rul: json['rul'] as int,
+              status: json['status'] as String,
+              icon: Icons.eco,
+              iconColor: const Color(0xFF10B981),
+              emoji: ProduceEmoji.getEmoji(json['name'] as String),
+              storage: json['storage'] as String? ?? 'fridge',
+              addedAt: DateTime.tryParse(json['addedAt'] as String? ?? '') ??
+                  DateTime.now(),
+            )).toList();
+        state = parsed;
+        return;
+      } catch (_) {
+        // Fallback to local Q10 simulation
+      }
+    }
+    // Local fallback — simulate Q10 decay
     state = state.map((item) {
       final decayMultiplier = item.storage == 'room' ? 0.85 : 0.98;
       final newRul = (item.rul * decayMultiplier).round();

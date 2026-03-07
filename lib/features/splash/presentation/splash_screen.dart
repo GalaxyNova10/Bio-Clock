@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../shared/core/app_theme.dart';
 
 /// Premium splash screen with pulsing Bio-Clock logo on deep emerald.
@@ -91,18 +93,6 @@ class _SplashScreenState extends State<SplashScreen>
                         height: 120,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(32),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.white.withValues(alpha: 0.15),
-                              Colors.white.withValues(alpha: 0.05),
-                            ],
-                          ),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            width: 1.5,
-                          ),
                           boxShadow: [
                             BoxShadow(
                               color: AppTheme.accentGreen.withValues(
@@ -115,25 +105,12 @@ class _SplashScreenState extends State<SplashScreen>
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            // Clock circle
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppTheme.accentGreen
-                                      .withValues(alpha: 0.6),
-                                  width: 2.5,
-                                ),
-                              ),
-                            ),
-                            // Leaf / eco icon
-                            Icon(
-                              Icons.eco,
-                              color: AppTheme.accentGreen.withValues(
-                                  alpha: 0.7 + _glowController.value * 0.3),
-                              size: 36,
+                            // Logo Image
+                            SvgPicture.asset(
+                              'assets/images/bioClockLeafLogo.svg',
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.contain,
                             ),
                           ],
                         ),

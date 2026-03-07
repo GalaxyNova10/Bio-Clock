@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/core/time_utils.dart';
 import '../../../shared/data/inventory_provider.dart';
+import '../../../shared/core/app_settings_provider.dart';
+import '../../../shared/core/app_theme.dart';
 import 'detail_view.dart';
 
 class InventoryScreen extends ConsumerWidget {
@@ -10,6 +12,7 @@ class InventoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final items = ref.watch(inventoryProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final total = items.length;
     final fresh = items.where((i) => i.status == 'fresh').length;
     final ripening = items.where((i) => i.status == 'ripening').length;
@@ -18,7 +21,7 @@ class InventoryScreen extends ConsumerWidget {
         .length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0C1018), // Dark UI Background
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Theme-aware
       appBar: AppBar(
         title: const Text('Inventory',
             style: TextStyle(fontWeight: FontWeight.bold)),
@@ -35,7 +38,7 @@ class InventoryScreen extends ConsumerWidget {
               label: const Text('Batch Predict',
                   style: TextStyle(color: Color(0xFF10B981))),
               style: TextButton.styleFrom(
-                backgroundColor: const Color(0xFF112616),
+                backgroundColor: isDark ? const Color(0xFF112616) : const Color(0xFFE8F5E9),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8)),
               ),
@@ -49,69 +52,115 @@ class InventoryScreen extends ConsumerWidget {
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Row(
+             child: Row(
               children: [
-                _summaryCard(
-                    'Total', total.toString(), const Color(0xFF1F2937)),
+                _summaryCard(context,
+                    'Total', total.toString(), isDark ? const Color(0xFF1F2937) : const Color(0xFFE2E8F0)),
                 const SizedBox(width: 8),
-                _summaryCard(
-                    'Fresh', fresh.toString(), const Color(0xFF064E3B)),
+                _summaryCard(context,
+                    'Fresh', fresh.toString(), isDark ? const Color(0xFF064E3B) : const Color(0xFFD1FAE5)),
                 const SizedBox(width: 8),
-                _summaryCard(
-                    'Ripening', ripening.toString(), const Color(0xFF452E07)),
+                _summaryCard(context,
+                    'Ripening', ripening.toString(), isDark ? const Color(0xFF452E07) : const Color(0xFFFEF3C7)),
                 const SizedBox(width: 8),
-                _summaryCard(
-                    'Critical', critical.toString(), const Color(0xFF451A1A)),
+                _summaryCard(context,
+                    'Critical', critical.toString(), isDark ? const Color(0xFF451A1A) : const Color(0xFFFEE2E2)),
               ],
             ),
           ),
 
           // ── Inventory List ──
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final item = items[index];
-                return _buildItemCard(context, item);
-              },
-            ),
+            child: ref.read(inventoryProvider.notifier).isLoading
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CircularProgressIndicator(color: Color(0xFF10B981)),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Fetching Live Data...',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: context.ext.textMuted.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : items.isEmpty && !ref.watch(appSettingsProvider).demoMode
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.qr_code_scanner_outlined,
+                                size: 80, color: context.ext.textMuted.withValues(alpha: 0.2)),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No Items Scanned Yet',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: context.ext.textMuted.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Scan your first produce to start tracking!',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: context.ext.textMuted.withValues(alpha: 0.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      return _buildItemCard(context, item, isDark);
+                    },
+                  ),
           ),
-          const SizedBox(height: 80), // For nav bar
         ],
       ),
     );
   }
 
-  Widget _summaryCard(String label, String value, Color color) {
+  Widget _summaryCard(BuildContext context, String label, String value, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.5),
+          color: color.withValues(alpha: isDark ? 0.5 : 0.8),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color, width: 1),
         ),
         child: Column(
           children: [
             Text(value,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white)),
+                    color: Theme.of(context).colorScheme.onSurface)),
             const SizedBox(height: 4),
             Text(label,
-                style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildItemCard(BuildContext context, ProduceItem item) {
+  Widget _buildItemCard(BuildContext context, ProduceItem item, bool isDark) {
     final storageLabel = item.storage == 'fridge' ? 'Fridge' : 'Room Temp';
     final storageIcon =
         item.storage == 'fridge' ? Icons.ac_unit : Icons.wb_sunny_outlined;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
 
     return GestureDetector(
       onTap: () => showDetailViewBottomSheet(context, item),
@@ -119,9 +168,15 @@ class InventoryScreen extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1F2937).withValues(alpha: 0.3),
+          color: isDark
+              ? const Color(0xFF1F2937).withValues(alpha: 0.3)
+              : const Color(0xFFFFFFFF),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF374151), width: 1),
+          border: Border.all(
+              color: isDark
+                  ? const Color(0xFF374151)
+                  : Colors.black.withValues(alpha: 0.08),
+              width: 1),
         ),
         child: Row(
           children: [
@@ -156,19 +211,19 @@ class InventoryScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(item.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white)),
+                          color: onSurface)),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(storageIcon, size: 12, color: Colors.grey),
+                      Icon(storageIcon, size: 12, color: onSurface.withValues(alpha: 0.5)),
                       const SizedBox(width: 4),
                       Text(
                           '$storageLabel · Added ${TimeUtils.timeAgo(item.addedAt)}',
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.grey)),
+                          style: TextStyle(
+                              fontSize: 12, color: onSurface.withValues(alpha: 0.5))),
                     ],
                   ),
                 ],
@@ -190,10 +245,18 @@ class InventoryScreen extends ConsumerWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: (item.status == 'fresh'
-                            ? const Color(0xFF064E3B)
-                            : const Color(0xFF452E07))
-                        .withValues(alpha: 0.5),
+                    color: isDark
+                        ? (item.status == 'fresh'
+                                ? const Color(0xFF064E3B)
+                                : item.status == 'critical'
+                                    ? const Color(0xFF451A1A)
+                                    : const Color(0xFF452E07))
+                            .withValues(alpha: 0.5)
+                        : (item.status == 'fresh'
+                            ? Colors.green.withValues(alpha: 0.15)
+                            : item.status == 'critical'
+                                ? Colors.red.withValues(alpha: 0.15)
+                                : Colors.orange.withValues(alpha: 0.15)),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -202,8 +265,10 @@ class InventoryScreen extends ConsumerWidget {
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: item.status == 'fresh'
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFF59E0B),
+                          ? (isDark ? const Color(0xFF10B981) : Colors.green)
+                          : item.status == 'critical'
+                              ? (isDark ? const Color(0xFFEF4444) : Colors.red)
+                              : (isDark ? const Color(0xFFF59E0B) : Colors.orange),
                     ),
                   ),
                 ),

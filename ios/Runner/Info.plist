@@ -66,5 +66,13 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Bio-Clock requires camera access to scan and analyze food items using AI.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Bio-Clock requires photo library access to upload food images for AI analysis.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Bio-Clock requires location access to fetch real-time weather data to accurately estimate food shelf life.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Bio-Clock requires microphone access for scanning video input.</string>
 </dict>
 </plist>
