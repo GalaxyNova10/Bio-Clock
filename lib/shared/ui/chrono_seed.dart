@@ -428,8 +428,7 @@ class _GemCorePainter extends CustomPainter {
       _facePathBot.lineTo(pNext.dx, pNext.dy);
       _facePathBot.close();
 
-      final lightFactor =
-          (double dx, double dy) => ((dx.abs() + dy.abs() + 1.0) / 3.0);
+      double lightFactor(double dx, double dy) => ((dx.abs() + dy.abs() + 1.0) / 3.0);
       double lTop = lightFactor(pCur.dx - top.dx, pCur.dy - top.dy + pNext.dx);
       double lBot = lightFactor(pCur.dx - bot.dx, pCur.dy - bot.dy + pNext.dx);
 

@@ -6,7 +6,7 @@ enum AppThemeMode { system, light, dark }
 
 /// State notifier that drives the entire app's brightness.
 class ThemeNotifier extends StateNotifier<AppThemeMode> {
-  ThemeNotifier() : super(AppThemeMode.system);
+  ThemeNotifier() : super(AppThemeMode.dark);
 
   void set(AppThemeMode mode) => state = mode;
 

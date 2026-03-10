@@ -66,11 +66,11 @@ class AboutScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'AI-Powered Food Freshness\nMonitor for India',
+                          'Bio-Clock utilizes a hybrid Neuro-Symbolic architecture, leveraging AWS SAM for rapid deployment and a high-availability dual-model pipeline for 99.9% inference uptime.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: ext.textSecondary,
-                            fontSize: 14,
+                            fontSize: 13,
                             height: 1.5,
                           ),
                         ),

@@ -50,15 +50,17 @@ class _PitchDashboardState extends State<PitchDashboard> {
                   _buildInfraRow(LucideIcons.zap, 'Amazon API Gateway',
                       'Rest Endpoint (eu-north-1)'),
                   _buildInfraLine(),
-                  _buildInfraRow(LucideIcons.cpu, 'AWS Lambda',
+                  _buildInfraRow(LucideIcons.cpu, 'AWS SAM Lambda',
                       'Runs Core Neuro-Symbolic Engine'),
                   _buildInfraLine(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       Expanded(
-                          child: _buildInfraRow(LucideIcons.sparkles,
-                              'Amazon Bedrock', 'Claude 4.5 Haiku Reasoning')),
+                          child: _buildInfraRow(
+                              LucideIcons.sparkles,
+                              'Amazon Nova Pro',
+                              'Primary AI Reasoning Engine')),
                       const SizedBox(width: 8),
                       Expanded(
                           child: _buildInfraRow(LucideIcons.database,
@@ -69,6 +71,39 @@ class _PitchDashboardState extends State<PitchDashboard> {
               ),
             ),
           ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1),
+
+          const SizedBox(height: 16),
+
+          // ── Resilience Status ──
+          ClayCard(
+            glow: true,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(LucideIcons.shieldCheck,
+                        color: AppTheme.accentGreen, size: 18),
+                    const SizedBox(width: 8),
+                    Text('RESILIENCE STATUS',
+                        style: GoogleFonts.nunito(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                            color: AppTheme.accentGreen)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text('Primary: Amazon Nova Pro | Failover: In-house ML Engine',
+                    style: GoogleFonts.spaceMono(
+                        fontSize: 12, color: Colors.white)),
+              ],
+            ),
+          )
+              .animate()
+              .fadeIn(delay: 100.ms, duration: 500.ms)
+              .slideY(begin: 0.1),
 
           const SizedBox(height: 32),
 
@@ -254,7 +289,8 @@ class _PitchDashboardState extends State<PitchDashboard> {
           const SizedBox(height: 4),
           Row(
             children: [
-              const Icon(Icons.trending_up, color: AppTheme.emeraldBrite, size: 14),
+              const Icon(Icons.trending_up,
+                  color: AppTheme.emeraldBrite, size: 14),
               const SizedBox(width: 4),
               Text(change,
                   style: GoogleFonts.spaceMono(

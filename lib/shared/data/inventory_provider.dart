@@ -137,6 +137,28 @@ final List<ProduceItem> demoProduce = [
     storage: 'fridge',
     addedAt: DateTime.now().subtract(const Duration(hours: 5)),
   ),
+  ProduceItem(
+    id: 'd8',
+    name: 'Rotten Strawberries',
+    rul: 0,
+    status: 'rotten',
+    icon: Icons.warning_amber_rounded,
+    iconColor: const Color(0xFFEF4444),
+    emoji: ProduceEmoji.getEmoji('Strawberries'),
+    storage: 'room',
+    addedAt: DateTime.now().subtract(const Duration(days: 5)),
+  ),
+  ProduceItem(
+    id: 'd9',
+    name: 'Old Lettuce',
+    rul: 180,
+    status: 'soon_rotten',
+    icon: Icons.warning_amber_rounded,
+    iconColor: const Color(0xFFF59E0B),
+    emoji: ProduceEmoji.getEmoji('Lettuce'),
+    storage: 'fridge',
+    addedAt: DateTime.now().subtract(const Duration(days: 3)),
+  ),
 ];
 
 class InventoryNotifier extends StateNotifier<List<ProduceItem>> {

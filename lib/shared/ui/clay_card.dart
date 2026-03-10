@@ -51,8 +51,9 @@ class _ClayCardState extends State<ClayCard> {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveBaseColor = widget.baseColor ?? AppTheme.surfaceBase;
-    final effectivePeakColor = widget.peakColor ?? AppTheme.surfacePeak;
+    final ext = context.ext;
+    final effectiveBaseColor = widget.baseColor ?? ext.clayBase;
+    final effectivePeakColor = widget.peakColor ?? ext.clayPeak;
 
     return GestureDetector(
       onTapDown: widget.onTap != null ? _handleTapDown : null,

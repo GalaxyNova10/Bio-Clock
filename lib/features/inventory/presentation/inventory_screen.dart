@@ -117,7 +117,7 @@ class InventoryScreen extends ConsumerWidget {
                         ),
                       )
                 : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                     itemCount: items.length,
                     itemBuilder: (context, index) {
                       final item = items[index];

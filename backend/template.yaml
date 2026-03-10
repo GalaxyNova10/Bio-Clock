@@ -1,0 +1,351 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Bio-Clock Serverless Backend 
+  S3, Cognito, DynamoDB, and the Intelligence Lambda (Rekognition + Claude 4.5)
+
+Globals:
+  Function:
+    Timeout: 45
+    MemorySize: 512
+    Runtime: python3.10
+    Architectures:
+      - x86_64
+
+Resources:
+  BioClockApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors:
+        AllowMethods: "'GET, POST, PUT, DELETE, OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,Access-Control-Allow-Origin,Access-Control-Allow-Headers,Access-Control-Allow-Methods'"
+        AllowOrigin: "'*'"
+        MaxAge: 300
+      Auth:
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt BioClockUserPool.Arn
+            Identity:
+              Header: Authorization
+
+  # --------------------------------------------------------------------------
+  # 1. S3 Bucket (With CORS for mobile Dio uploads)
+  # --------------------------------------------------------------------------
+  BioClockScansBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "bioclock-scans-v3-${AWS::AccountId}-${AWS::Region}"
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - PUT
+              - POST
+              - GET
+              - HEAD
+            AllowedOrigins:
+              - "*"
+            MaxAge: 3000
+
+  BioClockScansBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BioClockScansBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowAuthenticatedRoleS3Access
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt CognitoAuthenticatedRole.Arn
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+            Resource: !Sub "arn:aws:s3:::bioclock-scans-v3-${AWS::AccountId}-${AWS::Region}/public/*"
+
+  # --------------------------------------------------------------------------
+  # 2. Cognito User Pool & Identity Pool
+  # --------------------------------------------------------------------------
+  BioClockUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: bio-clock-users-v3
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: false
+          RequireSymbols: false
+          RequireNumbers: true
+          RequireLowercase: true
+
+  BioClockUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: bio-clock-flutter-client-v3
+      UserPoolId: !Ref BioClockUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+
+  BioClockIdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: bio_clock_identity_pool_v3
+      AllowUnauthenticatedIdentities: false
+      CognitoIdentityProviders:
+        - ClientId: !Ref BioClockUserPoolClient
+          ProviderName: !GetAtt BioClockUserPool.ProviderName
+
+  # Roles for Identity Pool
+  CognitoAuthenticatedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action:
+              - sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: !Ref BioClockIdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: authenticated
+      Policies:
+        - PolicyName: CognitoAuthorizedPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - mobileanalytics:PutEvents
+                  - cognito-sync:*
+                  - cognito-identity:*
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                Resource: !Sub "arn:aws:s3:::bioclock-scans-v3-${AWS::AccountId}-${AWS::Region}/public/${!cognito-identity.amazonaws.com:sub}/*"
+
+  CognitoUnauthenticatedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action:
+              - sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: !Ref BioClockIdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: unauthenticated
+      Policies:
+        - PolicyName: CognitoUnauthorizedPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - mobileanalytics:PutEvents
+                  - cognito-sync:*
+                Resource: "*"
+
+  IdentityPoolRoleAttachment:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref BioClockIdentityPool
+      Roles:
+        authenticated: !GetAtt CognitoAuthenticatedRole.Arn
+        unauthenticated: !GetAtt CognitoUnauthenticatedRole.Arn
+
+  # --------------------------------------------------------------------------
+  # 3. DynamoDB Table (Single-Table Design)
+  # --------------------------------------------------------------------------
+  BioClockInventoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: bio-clock-inventory-v3
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+
+  # --------------------------------------------------------------------------
+  # 4. Lambda Function (The Intelligence)
+  # --------------------------------------------------------------------------
+  ScanProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: function/
+      Handler: lambda_handler.lambda_handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref BioClockInventoryTable
+          USER_POOL_ID: !Ref BioClockUserPool
+          CLIENT_ID: !Ref BioClockUserPoolClient
+      Policies:
+        # Explicit IAM Policies
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:Query
+                - dynamodb:GetItem
+              Resource: !GetAtt BioClockInventoryTable.Arn
+        - Statement:
+            - Effect: Allow
+              Action:
+                - rekognition:DetectLabels
+              Resource: "*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: "*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+              Resource: !Sub "arn:aws:s3:::bioclock-scans-v3-${AWS::AccountId}-${AWS::Region}/*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminInitiateAuth
+                - cognito-idp:AdminCreateUser
+                - cognito-idp:AdminSetUserPassword
+                - cognito-idp:AdminGetUser
+              Resource: !GetAtt BioClockUserPool.Arn
+
+      Events:
+        ScanUploadEvent:
+          Type: S3
+          Properties:
+            Bucket: !Ref BioClockScansBucket
+            Events: s3:ObjectCreated:*
+        ScanAnalyzeEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BioClockApi
+            Path: /scan/analyze
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        ScanPreserveEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BioClockApi
+            Path: /scan/preserve
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        InventoryListEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BioClockApi
+            Path: /inventory
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        InventoryAddEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BioClockApi
+            Path: /inventory/add
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+        ProfileStatsEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BioClockApi
+            Path: /profile/stats
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        AuthSignInEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BioClockApi
+            Path: /auth/signin
+            Method: post
+        AuthSignUpEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BioClockApi
+            Path: /auth/signup
+            Method: post
+        AuthRefreshEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BioClockApi
+            Path: /auth/refresh
+            Method: post
+
+  # --------------------------------------------------------------------------
+  # 5. Donation Lambda (Triggered by API Gateway)
+  # --------------------------------------------------------------------------
+  DonationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: function/
+      Handler: process_donation.lambda_handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref BioClockInventoryTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref BioClockInventoryTable
+      Events:
+        DonationApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BioClockApi
+            Path: /inventory/donate
+            Method: post
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+Outputs:
+  ApiGatewayUrl:
+    Description: "Base URL of the API Gateway"
+    Value: !Sub "https://${BioClockApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+  CognitoUserPoolId:
+    Description: "ID of the User Pool"
+    Value: !Ref BioClockUserPool
+  CognitoClientId:
+    Description: "Client ID of the User Pool Client"
+    Value: !Ref BioClockUserPoolClient
+  CognitoIdentityPoolId:
+    Description: "ID of the Identity Pool"
+    Value: !Ref BioClockIdentityPool
+  S3BucketName:
+    Description: "Name of the Scans S3 Bucket"
+    Value: !Ref BioClockScansBucket
+  DynamoDBTableName:
+    Description: "Name of the DynamoDB Table"
+    Value: !Ref BioClockInventoryTable

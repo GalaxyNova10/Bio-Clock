@@ -268,6 +268,8 @@ class AppTheme {
           textMuted: textMuted,
           textSecondary: textSecondary,
           surfaceDim: surfaceDimDark,
+          clayBase: surfaceBase,
+          clayPeak: surfacePeak,
         ),
       ],
     );
@@ -299,37 +301,57 @@ class AppTheme {
       ),
       textTheme: TextTheme(
         displayLarge: GoogleFonts.nunito(
-          fontSize: 40, fontWeight: FontWeight.w800,
-          color: textDark, height: 1.1, letterSpacing: -1.0,
+          fontSize: 40,
+          fontWeight: FontWeight.w800,
+          color: textDark,
+          height: 1.1,
+          letterSpacing: -1.0,
         ),
         displayMedium: GoogleFonts.nunito(
-          fontSize: 28, fontWeight: FontWeight.bold,
-          color: textDark, height: 1.2,
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: textDark,
+          height: 1.2,
         ),
         titleLarge: GoogleFonts.nunito(
-          fontSize: 20, fontWeight: FontWeight.w600, color: textDark,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: textDark,
         ),
         titleMedium: GoogleFonts.nunito(
-          fontSize: 18, fontWeight: FontWeight.w700, color: textDark,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: textDark,
         ),
         bodyLarge: GoogleFonts.dmSans(
-          fontSize: 16, color: textSecLight, height: 1.5,
+          fontSize: 16,
+          color: textSecLight,
+          height: 1.5,
         ),
         bodyMedium: GoogleFonts.dmSans(
-          fontSize: 14, color: textSecLight, height: 1.5,
+          fontSize: 14,
+          color: textSecLight,
+          height: 1.5,
         ),
         bodySmall: GoogleFonts.dmSans(
-          fontSize: 12, color: textMutedLight,
+          fontSize: 12,
+          color: textMutedLight,
         ),
         labelSmall: GoogleFonts.spaceMono(
-          fontSize: 10, fontWeight: FontWeight.w600,
-          letterSpacing: 1.2, color: textMutedLight,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.2,
+          color: textMutedLight,
         ),
         labelMedium: GoogleFonts.spaceMono(
-          fontSize: 12, fontWeight: FontWeight.w600, color: textSecLight,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: textSecLight,
         ),
         labelLarge: GoogleFonts.spaceMono(
-          fontSize: 14, fontWeight: FontWeight.w700, color: textDark,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: textDark,
         ),
       ),
       appBarTheme: const AppBarTheme(
@@ -355,7 +377,9 @@ class AppTheme {
             borderRadius: BorderRadius.circular(radiusMd),
           ),
           textStyle: GoogleFonts.nunito(
-            fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.5,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -374,7 +398,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(radiusMd),
           borderSide: const BorderSide(color: emeraldCore, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: const TextStyle(color: textMutedLight),
       ),
       sliderTheme: SliderThemeData(
@@ -391,11 +416,13 @@ class AppTheme {
       ),
       extensions: const [
         AppThemeExtension(
-          glassBackground: Color(0x0A000000), // very subtle dark tint on white
-          glassBorder: Color(0x14000000),
+          glassBackground: Color(0x2210B981), // semi-transparent emerald tint
+          glassBorder: Color(0x4410B981),
           textMuted: textMutedLight,
           textSecondary: textSecLight,
           surfaceDim: surfaceDimLight,
+          clayBase: Color(0xFFE8F5E9),
+          clayPeak: Color(0xFFFFFFFF),
         ),
       ],
     );
@@ -409,6 +436,8 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
   final Color textMuted;
   final Color textSecondary;
   final Color surfaceDim;
+  final Color clayBase;
+  final Color clayPeak;
 
   const AppThemeExtension({
     required this.glassBackground,
@@ -416,6 +445,8 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
     required this.textMuted,
     required this.textSecondary,
     required this.surfaceDim,
+    required this.clayBase,
+    required this.clayPeak,
   });
 
   @override
@@ -425,6 +456,8 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
     Color? textMuted,
     Color? textSecondary,
     Color? surfaceDim,
+    Color? clayBase,
+    Color? clayPeak,
   }) {
     return AppThemeExtension(
       glassBackground: glassBackground ?? this.glassBackground,
@@ -432,6 +465,8 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
       textMuted: textMuted ?? this.textMuted,
       textSecondary: textSecondary ?? this.textSecondary,
       surfaceDim: surfaceDim ?? this.surfaceDim,
+      clayBase: clayBase ?? this.clayBase,
+      clayPeak: clayPeak ?? this.clayPeak,
     );
   }
 
@@ -445,6 +480,8 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
       textMuted: Color.lerp(textMuted, other.textMuted, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       surfaceDim: Color.lerp(surfaceDim, other.surfaceDim, t)!,
+      clayBase: Color.lerp(clayBase, other.clayBase, t)!,
+      clayPeak: Color.lerp(clayPeak, other.clayPeak, t)!,
     );
   }
 }

@@ -47,3 +47,31 @@ app.*.map.json
 # Analysis logs
 analyze_output*.txt
 analysis_results*.txt
+build_output.txt
+functions.txt
+
+# AWS SAM & Lambda
+.aws-sam/
+function.zip
+**/function.zip
+
+# Legacy backend (replaced by /backend)
+aws_backend/
+
+# Secrets and Logs
+.env
+*.env
+build_verbose.txt
+build_v2.txt
+test_output.txt
+node_modules/
+dist/
+
+# Temp files
+*.ps1
+.qoder/
+bio-clock-video/node_modules/
+bio-clock-video/out/
+.flutter-plugins-dependencies
+
+.vercel

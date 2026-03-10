@@ -17,10 +17,10 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _emailController = TextEditingController(text: 'demo@bioclock.app');
-  final _passwordController = TextEditingController(text: '••••••••');
+  final _emailController = TextEditingController(text: "");
+  final _passwordController = TextEditingController(text: "");
   bool _obscure = true;
-  bool _biometricSuccess = false;
+
 
   @override
   void dispose() {
@@ -38,7 +38,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
       return;
     }
-    final success = await ref.read(authProvider.notifier).signIn(email, password);
+    final success =
+        await ref.read(authProvider.notifier).signIn(email, password);
     if (mounted && success) {
       context.go('/');
     } else if (mounted) {
@@ -46,7 +47,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final error = authState.error ?? 'Sign in failed';
 
       // Debug Entry Bypass
-      if ((error.contains('401') || error.contains('400')) && authState.idToken != null) {
+      if ((error.contains('401') || error.contains('400')) &&
+          authState.idToken != null) {
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -69,18 +71,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  Future<void> _biometricLogin() async {
-    final success = await ref.read(authProvider.notifier).biometricSignIn();
-    if (mounted && success) {
-      setState(() => _biometricSuccess = true);
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (mounted) context.go('/');
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Biometric auth not available on this platform')),
-      );
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -272,7 +263,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   intensity: 0.3),
                             ),
                             child: ElevatedButton(
-                              onPressed: ref.watch(authProvider).isLoading ? null : _login,
+                              onPressed: ref.watch(authProvider).isLoading
+                                  ? null
+                                  : _login,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
@@ -301,78 +294,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 20),
-
-                        // Divider
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                height: 1,
-                                color: Colors.white.withValues(alpha: 0.1),
-                              ),
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(
-                                'or',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.white.withValues(alpha: 0.4),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Container(
-                                height: 1,
-                                color: Colors.white.withValues(alpha: 0.1),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Biometric button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: OutlinedButton.icon(
-                            onPressed: _biometricLogin,
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: _biometricSuccess
-                                    ? AppTheme.accentGreen
-                                    : Colors.white.withValues(alpha: 0.15),
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            icon: Icon(
-                              _biometricSuccess
-                                  ? Icons.check_circle
-                                  : Icons.fingerprint,
-                              color: _biometricSuccess
-                                  ? AppTheme.accentGreen
-                                  : Colors.white.withValues(alpha: 0.6),
-                              size: 22,
-                            ),
-                            label: Text(
-                              _biometricSuccess
-                                  ? 'Authenticated!'
-                                  : 'Sign in with Biometrics',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: _biometricSuccess
-                                    ? AppTheme.accentGreen
-                                    : Colors.white.withValues(alpha: 0.7),
-                              ),
-                            ),
-                          ),
-                        ),
+                        const SizedBox(height: 12),
                       ],
                     ),
                   ),
@@ -384,8 +306,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 28),
 
                 // Register link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       "Don't have an account? ",

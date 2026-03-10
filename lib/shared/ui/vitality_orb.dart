@@ -199,8 +199,8 @@ class _DataRingsPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 
-    final dashCount = 36;
-    final sweepAngle = (2 * math.pi) / dashCount;
+    const dashCount = 36;
+    const sweepAngle = (2 * math.pi) / dashCount;
     for (int i = 0; i < dashCount; i++) {
       if (i % 2 == 0) {
         canvas.drawArc(
@@ -223,8 +223,8 @@ class _DataRingsPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
       
-    final outerSegments = 4;
-    final outerSweep = (2 * math.pi) / outerSegments;
+    const outerSegments = 4;
+    const outerSweep = (2 * math.pi) / outerSegments;
     for (int i = 0; i < outerSegments; i++) {
       canvas.drawArc(
         Rect.fromCircle(center: Offset.zero, radius: outerRadius),

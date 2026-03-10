@@ -11,10 +11,12 @@ class AwsConfig {
   // ── Cognito ──
   static const String userPoolId = 'us-east-1_u4dg8hPVI';
   static const String clientId = '2j5runm77e1iss73grqjsf5skp';
-  static const String identityPoolId = 'us-east-1:70f2b5e7-03ec-402c-a27f-534e5b5ab972';
+  static const String identityPoolId =
+      'us-east-1:70f2b5e7-03ec-402c-a27f-534e5b5ab972';
 
   // ── API Gateway ──
-  static const String apiBaseUrl = 'https://0dqlv9aerd.execute-api.us-east-1.amazonaws.com/Prod';
+  static const String apiBaseUrl =
+      'https://0dqlv9aerd.execute-api.us-east-1.amazonaws.com/Prod';
   static const String s3BucketName = 'bioclock-scans-v3-882574059997-us-east-1';
   static const String s3Region = region;
 
@@ -36,7 +38,7 @@ class AwsConfig {
   static const String profileAchievements = '/profile/achievements';
 
   // ── API Keys ──
-  static const String apiKey = 'PLACEHOLDER_API_KEY';
+  static const String apiKey = '';
 
   // ── Feature Flags ──
   /// Set to true once real AWS endpoints are deployed.

@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import '../core/app_theme.dart';
 
 /// The Bio-RUL Timeline
 /// A world-class biological chronometer visualization.
@@ -287,7 +286,7 @@ class _BioHelixPainter extends CustomPainter {
     final h = size.height;
 
     final strandWidth = size.width * 0.4;
-    final rungs = 8;
+    const rungs = 8;
     
     final paint1 = Paint()
       ..color = helixColor.withValues(alpha: 0.8)
@@ -393,9 +392,9 @@ class _ChronometerRingPainter extends CustomPainter {
 
     final handAngle = sweepPhase * 2 * math.pi;
 
-    final segments = 24;
-    final sweep = (2 * math.pi) / segments;
-    final gap = sweep * 0.3; // 30% gap
+    const segments = 24;
+    const sweep = (2 * math.pi) / segments;
+    const gap = sweep * 0.3; // 30% gap
 
     for (int i = 0; i < segments; i++) {
       final startAngle = (i * sweep) - (math.pi / 2); // Start at top

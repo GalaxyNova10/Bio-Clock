@@ -1,0 +1,9 @@
+{
+    "httpMethod": "POST",
+    "path": "/scan/analyze",
+    "headers": {
+        "Content-Type": "application/json"
+    },
+    "body": "{\"action\": \"test_handshake\"}",
+    "isBase64Encoded": false
+}

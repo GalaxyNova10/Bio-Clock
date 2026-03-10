@@ -19,8 +19,11 @@ class ApiClient {
       baseUrl: AwsConfig.apiBaseUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 15),
+      validateStatus: (status) =>
+          status != null && status >= 200 && status < 300,
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'x-api-key': AwsConfig.apiKey,
       },
     ));
@@ -31,7 +34,6 @@ class ApiClient {
         final token = getToken();
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
-          print('DEBUG: Sending Token: $token');
         }
         handler.next(options);
       },
@@ -43,7 +45,8 @@ class ApiClient {
             final newToken = getToken();
             if (newToken != null) {
               // Retry the failed request with the new token
-              error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+              error.requestOptions.headers['Authorization'] =
+                  'Bearer $newToken';
               try {
                 final response = await _dio.fetch(error.requestOptions);
                 return handler.resolve(response);
@@ -81,7 +84,8 @@ class ApiClient {
   }
 
   /// Refresh the session using a Cognito refresh token.
-  Future<Map<String, dynamic>> refreshToken(String email, String refreshToken) async {
+  Future<Map<String, dynamic>> refreshToken(
+      String email, String refreshToken) async {
     final response = await _dio.post(
       '/auth/refresh', // Target API Gateway route for REFRESH_TOKEN_AUTH
       data: {'email': email, 'refreshToken': refreshToken},
@@ -144,39 +148,38 @@ class ApiClient {
 
   /// Upload image to S3 (Pre-signed or Direct API Gateway proxy flow)
   /// Forces a token refresh before every upload for bulletproof auth.
-  Future<Map<String, dynamic>> uploadImageToS3(dynamic imageFile, {String? userId}) async {
+  Future<Map<String, dynamic>> uploadImageToS3(dynamic imageFile,
+      {String? userId}) async {
     if (!AwsConfig.useCloudBackend) {
-      throw Exception('Cloud disabled. Falling back to local EmeraldDiamond mock logic.');
+      throw Exception(
+          'Cloud disabled. Falling back to local EmeraldDiamond mock logic.');
     }
 
-    // Force a fresh 1-hour token before every scan upload
     await onRefresh();
 
     try {
-      // S3 key: public/<sub>/<timestamp>.jpg
       final userSub = userId ?? 'unknown';
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final String s3Key = 'public/$userSub/$timestamp.jpg';
-      final String filePath = imageFile.path;
 
-      final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(filePath, filename: '$timestamp.jpg'),
-        's3Key': s3Key,
-      });
-      
+      final bytes = await imageFile.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
       final response = await _dio.post(
         AwsConfig.scanAnalyze,
-        data: formData,
+        data: {
+          'image': base64Image,
+          's3Key': s3Key,
+        },
         options: Options(
-          contentType: 'multipart/form-data',
           sendTimeout: const Duration(seconds: 30),
           receiveTimeout: const Duration(seconds: 30),
         ),
       );
-      
+
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout || 
+      if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout) {
         throw Exception('Connection Timed Out. Falling back to local mock.');
       }
@@ -185,24 +188,30 @@ class ApiClient {
   }
 
   /// Upload image via bytes (Web/Cross-platform) with S3-partitioned key.
-  /// Forces a token refresh before every upload for bulletproof auth.
-  Future<Map<String, dynamic>> scanProduce(Uint8List imageBytes, {String? userId}) async {
-    // Force a fresh 1-hour token before every scan upload
+  /// Optionally accepts [overrideName] for user-corrected produce identification.
+  Future<Map<String, dynamic>> scanProduce(Uint8List imageBytes,
+      {String? userId, String? overrideName}) async {
     await onRefresh();
 
     final userSub = userId ?? 'unknown';
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final s3Key = 'public/$userSub/$timestamp.jpg';
 
-    final formData = FormData.fromMap({
-      'file': MultipartFile.fromBytes(imageBytes, filename: '$timestamp.jpg'),
+    final base64Image = base64Encode(imageBytes);
+
+    final data = <String, dynamic>{
+      'image': base64Image,
       's3Key': s3Key,
-    });
-    
+    };
+
+    // Inject override_name if the user provided a correction
+    if (overrideName != null && overrideName.isNotEmpty) {
+      data['override_name'] = overrideName;
+    }
+
     final response = await _dio.post(
       AwsConfig.scanAnalyze,
-      data: formData,
-      options: Options(contentType: 'multipart/form-data'),
+      data: data,
     );
     return response.data as Map<String, dynamic>;
   }

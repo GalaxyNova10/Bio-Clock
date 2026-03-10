@@ -10,6 +10,8 @@ import '../../../shared/data/api_client.dart';
 import '../../../shared/data/auth_provider.dart';
 import '../../../shared/data/inventory_provider.dart';
 import '../../../shared/ui/glass_card.dart';
+import '../../../shared/ui/clay_card.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Profile screen — merged Agent + Profile + Settings.
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -108,16 +110,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         final authState = ref.watch(authProvider);
                         final resolvedName = authState.displayName;
                         // Shimmer placeholder while name is still initializing
-                        if (resolvedName == 'Guest User' && authState.isAuthenticated) {
+                        if (resolvedName == 'Guest User' &&
+                            authState.isAuthenticated) {
                           return Container(
                             width: 120,
                             height: 22,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.08),
+                              color: context.isDark
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : Colors.black.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                          ).animate(onPlay: (c) => c.repeat())
-                            .shimmer(duration: 1200.ms, color: Colors.white.withValues(alpha: 0.15));
+                          ).animate(onPlay: (c) => c.repeat()).shimmer(
+                              duration: 1200.ms,
+                              color: context.isDark
+                                  ? Colors.white.withValues(alpha: 0.15)
+                                  : Colors.black.withValues(alpha: 0.1));
                         }
                         return Text(resolvedName,
                             style: const TextStyle(
@@ -146,21 +154,53 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                 Row(
                   children: [
-                    _impactCard(context, Icons.eco, AppTheme.accentGreen,
-                        _isLoadingStats ? 'Sync...' : (_stats != null ? '${_stats!['co2Saved'] ?? '0'}kg' : '12.5kg'), 'CO₂ Saved'),
+                    _impactCard(
+                        context,
+                        Icons.eco,
+                        AppTheme.accentGreen,
+                        _isLoadingStats
+                            ? 'Sync...'
+                            : (_stats != null
+                                ? '${_stats!['co2Saved'] ?? '0'}kg'
+                                : '12.5kg'),
+                        'CO₂ Saved'),
                     const SizedBox(width: 10),
-                    _impactCard(context, Icons.savings, AppTheme.accentAmber,
-                        _isLoadingStats ? 'Sync...' : (_stats != null ? '₹${_stats!['moneySaved'] ?? '0'}' : '₹3,450'), 'Money Saved'),
+                    _impactCard(
+                        context,
+                        Icons.savings,
+                        AppTheme.accentAmber,
+                        _isLoadingStats
+                            ? 'Sync...'
+                            : (_stats != null
+                                ? '₹${_stats!['moneySaved'] ?? '0'}'
+                                : '₹3,450'),
+                        'Money Saved'),
                   ],
                 ).animate().fadeIn(delay: 150.ms, duration: 500.ms),
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    _impactCard(context, Icons.qr_code_scanner, AppTheme.accentCyan,
-                        _isLoadingStats ? 'Sync...' : (_stats != null ? '${_stats!['scans'] ?? '0'}' : '47'), 'Items Scanned'),
+                    _impactCard(
+                        context,
+                        Icons.qr_code_scanner,
+                        AppTheme.accentCyan,
+                        _isLoadingStats
+                            ? 'Sync...'
+                            : (_stats != null
+                                ? '${_stats!['scans'] ?? '0'}'
+                                : '47'),
+                        'Items Scanned'),
                     const SizedBox(width: 10),
-                    _impactCard(context, Icons.verified, AppTheme.accentPurple,
-                        _isLoadingStats ? 'Sync...' : (_stats != null ? '${_stats!['accuracy'] ?? '0'}%' : '85%'), 'Accuracy'),
+                    _impactCard(
+                        context,
+                        Icons.verified,
+                        AppTheme.accentPurple,
+                        _isLoadingStats
+                            ? 'Sync...'
+                            : (_stats != null
+                                ? '${_stats!['accuracy'] ?? '0'}%'
+                                : '85%'),
+                        'Accuracy'),
                   ],
                 ).animate().fadeIn(delay: 200.ms, duration: 500.ms),
 
@@ -216,11 +256,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         'Demo Mode',
                         'Fills inventory with simulated items', // Updated description
                         settings.demoMode,
-                        (val) { // Updated onChange handler
-                          ref.read(appSettingsProvider.notifier).setDemoMode(val);
+                        (val) {
+                          // Updated onChange handler
+                          ref
+                              .read(appSettingsProvider.notifier)
+                              .setDemoMode(val);
                           if (!val) {
                             try {
-                              ref.read(inventoryProvider.notifier).fetchFromCloud();
+                              ref
+                                  .read(inventoryProvider.notifier)
+                                  .fetchFromCloud();
                             } catch (e) {
                               debugPrint('Error refreshing inventory: \$e');
                             }
@@ -248,17 +293,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         (v) => ref
                             .read(appSettingsProvider.notifier)
                             .setPushNotifications(v),
-                      ),
-                      _divider(context),
-                      _toggleRow(
-                        context,
-                        Icons.vibration,
-                        'Haptic Feedback',
-                        'Vibrate on scan completion',
-                        settings.hapticFeedback,
-                        (v) => ref
-                            .read(appSettingsProvider.notifier)
-                            .setHapticFeedback(v),
                       ),
                       _divider(context),
                       _toggleRow(
@@ -326,40 +360,39 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           'Pitch Dashboard (Demo)',
                           '',
                           () => context.push('/pitch')),
-                      _divider(context),
-                      _navRow(context, Icons.privacy_tip_outlined,
-                          'Privacy Policy', '', () {}),
-                      _divider(context),
-                      _navRow(context, Icons.description_outlined,
-                          'Terms of Service', '', () {}),
                     ],
                   ),
                 ).animate().fadeIn(delay: 500.ms, duration: 500.ms),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 32),
 
                 // Logout
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => context.go('/login'),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                          color: AppTheme.accentRed.withValues(alpha: 0.4)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                ClayCard(
+                  glow: true,
+                  padding: const EdgeInsets.all(0),
+                  child: InkWell(
+                    onTap: () => context.go('/login'),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.logout,
+                              color: AppTheme.accentRed, size: 20),
+                          const SizedBox(width: 8),
+                          Text('Logout',
+                              style: GoogleFonts.nunito(
+                                  color: AppTheme.accentRed,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800)),
+                        ],
+                      ),
                     ),
-                    icon: const Icon(Icons.logout,
-                        color: AppTheme.accentRed, size: 18),
-                    label: const Text('Logout',
-                        style: TextStyle(
-                            color: AppTheme.accentRed,
-                            fontWeight: FontWeight.w600)),
                   ),
                 ).animate().fadeIn(delay: 550.ms),
 
-                const SizedBox(height: 140),
+                const SizedBox(height: 40),
               ]),
             ),
           ),
@@ -408,8 +441,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _badge(BuildContext context, String emoji, String label, {int unlocksAt = 1}) {
-    final int currentScans = _stats != null ? ((_stats!['scans'] as num?)?.toInt() ?? 0) : 47;
+  Widget _badge(BuildContext context, String emoji, String label,
+      {int unlocksAt = 1}) {
+    final int currentScans =
+        _stats != null ? ((_stats!['scans'] as num?)?.toInt() ?? 0) : 47;
     final bool isUnlocked = currentScans >= unlocksAt;
 
     return Container(
@@ -428,7 +463,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Text(emoji,
               style: TextStyle(
                 fontSize: 28,
-                color: isUnlocked ? null : Colors.grey.withOpacity(0.2), // Grayscale simulation for emoji
+                color: isUnlocked
+                    ? null
+                    : Colors.grey
+                        .withOpacity(0.2), // Grayscale simulation for emoji
               )),
           const SizedBox(height: 6),
           Text(
@@ -436,7 +474,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: isUnlocked ? context.ext.textMuted : context.ext.textMuted.withOpacity(0.3),
+              color: isUnlocked
+                  ? context.ext.textMuted
+                  : context.ext.textMuted.withOpacity(0.3),
             ),
             textAlign: TextAlign.center,
           ),

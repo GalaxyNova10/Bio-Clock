@@ -218,7 +218,7 @@ class _BioNeuralNexusState extends State<BioNeuralNexus>
         // ── Labels ──
         Text(
           widget.label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
             color: AppTheme.emeraldCore,
@@ -332,8 +332,8 @@ class _NeuralNetworkPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final nodes = _BioNeuralNexusState._nodes;
-    final edges = _BioNeuralNexusState._edges;
+    const nodes = _BioNeuralNexusState._nodes;
+    const edges = _BioNeuralNexusState._edges;
 
     // Pulsing opacity: oscillate between 0.3 and 0.8
     final baseAlpha = 0.3 + (pulseValue * 0.5);
@@ -434,8 +434,8 @@ class _ParticlePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final nodes = _BioNeuralNexusState._nodes;
-    final edges = _BioNeuralNexusState._edges;
+    const nodes = _BioNeuralNexusState._nodes;
+    const edges = _BioNeuralNexusState._edges;
     final rng = Random(42); // deterministic seed for stable positions
 
     final particlePaint = Paint()
